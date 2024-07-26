@@ -1,0 +1,24 @@
+<odoo>
+  <!-- Define a new record of the model "ir.ui.view" -->
+  <record id="payment_pos_form_zalopay" model="ir.ui.view">
+    <!-- Set the name of the view -->
+    <field name="name">Zalopay Provider Form</field>
+    <!-- Set the model that this view is related to -->
+    <field name="model">payment.provider</field>
+    <!-- Inherit from the existing "payment.provider.form" view -->
+    <field name="inherit_id" ref="payment.payment_provider_form" />
+    <!-- Define the architecture of the view -->
+    <field name="arch" type="xml">
+      <!-- Find the group named "provider_credentials" -->
+      <group name="provider_credentials" position="inside">
+        <group invisible="code != 'zalopay'"
+          name="zalopay_credentials" string="ZaloPay QR credentials">
+          <field name="zalopay_qr_tmn_code"
+            string="ZALOPay Website Code for QR (TmnCode)"
+            required="code == 'zalopay' and state != 'disabled'"
+          />
+        </group>
+      </group>
+    </field>
+  </record>
+</odoo>

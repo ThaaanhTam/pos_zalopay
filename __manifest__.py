@@ -15,9 +15,9 @@
         "data/pos_payment_method_data.xml",
     ],
     "assets": {
-    "point_of_sale.assets": [
-        'pos_zalopay/static/src/js/payment_zalopay.js',
-    ],
+        "point_of_sale.assets_prod": [
+            "pos_zalopay/static/src/js/pos_online_payment/*",
+        ],
     },
     "installable": True,
     "auto_install": False,

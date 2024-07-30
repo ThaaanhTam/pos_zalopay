@@ -1,76 +1,66 @@
-import hashlib
 import logging
-import base64
 import json
-import qrcode
-from io import BytesIO
-
-from odoo import http, fields
+import urllib.parse
+from odoo import http
 from odoo.http import request
+from werkzeug.exceptions import BadRequest
 
 _logger = logging.getLogger(__name__)
 
-class ZaloPayController(http.Controller):
+class PaymentZaloPayController(http.Controller):
+    @http.route('/payment/zalopay/return', type='http', auth='public', methods=['GET'], csrf=False)
+    def zalopay_return(self, **post):
+        # Xử lý phản hồi từ ZaloPay sau khi thanh toán
+        _logger.info("ZaloPay return response: %s", post)
+        # Kiểm tra và xác thực dữ liệu từ ZaloPay
+        if 'order_id' not in post:
+            return request.render('payment_zalopay.error_page', {})
 
-    @http.route('/pos/zalopay/get_payment_qr', type='json', methods=['POST'], auth='public', csrf=False)
-    def get_payment_qr(self, order_id, amount):
-        try:
-            # Retrieve provider information
-            provider = request.env['payment.provider'].sudo().search([('code', '=', 'zalopay')], limit=1)
-            if not provider:
-                return {'error': 'ZaloPay provider not found'}
+        transaction = request.env['payment.transaction'].search([('app_trans_id', '=', post['order_id'])])
+        if not transaction:
+            return request.render('payment_zalopay.error_page', {})
 
-            # Prepare request data
-            data = {
-                'appId': provider.zalopay_app_id,
-                'merchantCode': provider.zalopay_merchant_code,
-                'amount': amount,
-                'orderId': str(order_id),
-                'callbackUrl': provider.zalopay_callback_url,
-                'returnUrl': provider.zalopay_return_url,
-                'checksum': ''
-            }
+        # Xử lý xác nhận thanh toán thành công
+        transaction.write({'state': 'done'})
+        return request.render('payment_zalopay.success_page', {})
 
-            # Create checksum
-            checksum_str = f"{data['appId']}|{data['merchantCode']}|{data['amount']}|{data['orderId']}|{provider.zalopay_secret_key}"
-            data['checksum'] = hashlib.md5(checksum_str.encode()).hexdigest()
-
-            # Call ZaloPay API
-            response = request.env['payment.provider'].sudo()._call_zalopay_api('create_payment_url', data)
-            response_data = response.json()
-
-            # Generate QR code
-            qr_code = qrcode.make(response_data['paymentUrl'])
-            qr_code_file = BytesIO()
-            qr_code.save(qr_code_file, format='PNG')
-            qr_code_base64 = base64.b64encode(qr_code_file.getvalue()).decode('utf-8')
-
-            return {'qr_code': qr_code_base64, 'payment_url': response_data['paymentUrl']}
-        except Exception as e:
-            _logger.error('Error in ZaloPay QR code generation: %s', str(e))
-            return {'error': 'Failed to generate QR code'}
-
-    @http.route('/pos/zalopay/callback', type='json', methods=['POST'], auth='public', csrf=False)
+    @http.route('/payment/zalopay/callback', type='http', auth='public', methods=['POST'], csrf=False)
     def zalopay_callback(self, **post):
+        # Xử lý callback từ ZaloPay
+        _logger.info("ZaloPay callback response: %s", post)
         try:
-            # Retrieve provider information
-            provider = request.env['payment.provider'].sudo().search([('code', '=', 'zalopay')], limit=1)
-            if not provider:
-                return 'error'
+            order_id = post.get('order_id')
+            if not order_id:
+                raise BadRequest("Order ID is missing")
 
-            # Validate checksum
-            checksum_str = f"{post.get('appId')}|{post.get('orderId')}|{post.get('amount')}|{post.get('status')}|{provider.zalopay_secret_key}"
-            checksum = hashlib.md5(checksum_str.encode()).hexdigest()
-            if checksum != post.get('checksum'):
-                return 'error'
+            transaction = request.env['payment.transaction'].search([('app_trans_id', '=', order_id)])
+            if not transaction:
+                raise BadRequest("Transaction not found")
 
-            # Find transaction and update status
-            tx = request.env['payment.transaction'].sudo().search([('reference', '=', post.get('orderId'))], limit=1)
-            if tx:
-                tx.write({'state': 'done'})
-                return 'success'
-            else:
-                return 'error'
+            # Xác nhận thanh toán và cập nhật trạng thái đơn hàng
+            transaction.write({'state': 'done'})
         except Exception as e:
-            _logger.error('Error in ZaloPay callback handling: %s', str(e))
-            return 'error'
+            _logger.error("ZaloPay callback failed: %s", e)
+            return request.make_response(json.dumps({'status': 'error'}), status=500)
+
+        return request.make_response(json.dumps({'status': 'success'}), status=200)
+    
+    @http.route('/pos/vnpay/get_payment_qr', type='http', auth='public', methods=['GET'], csrf=False)
+    def get_payment_qr(self, **kwargs):
+        # Tạo mã QR cho thanh toán
+        _logger.info("Generating payment QR code")
+        try:
+            transaction_id = kwargs.get('transaction_id')
+            if not transaction_id:
+                raise BadRequest("Transaction ID is missing")
+
+            transaction = request.env['payment.transaction'].search([('id', '=', int(transaction_id))])
+            if not transaction:
+                raise BadRequest("Transaction not found")
+
+            # Tạo mã QR hoặc URL thanh toán
+            qr_url = transaction._get_specific_rendering_values({})
+            return request.make_response(json.dumps({'qr_url': qr_url['api_url']}), status=200)
+        except Exception as e:
+            _logger.error("Failed to generate payment QR code: %s", e)
+            return request.make_response(json.dumps({'status': 'error'}), status=500)

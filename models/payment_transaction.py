@@ -14,7 +14,7 @@ _logger = logging.getLogger(__name__)
 
 class PaymentTransaction(models.Model):
     _inherit = "payment.transaction"
-    
+    logging.info("Bắt đầu tạo đơn hàng")
     app_trans_id = fields.Char(string="App Transaction ID")
 
     def _get_specific_rendering_values(self, processing_values):

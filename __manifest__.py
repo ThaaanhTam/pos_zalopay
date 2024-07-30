@@ -12,6 +12,7 @@
     "data": [ # Do no change the order
         "data/payment_method_data.xml",
         "views/pos_zalopay_settings.xml",
+        "data/pos_payment_method_data.xml",
     ],
     "assets": {
     "point_of_sale.assets": [

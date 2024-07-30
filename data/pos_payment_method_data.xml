@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+  <!-- Creates a new record in the 'paymvent.method' model with the id 'payment_method_vnpay'. -->
+  <record id="pos_payment_method_zalopay_qr" model="pos.payment.method">
+    <field name="name">ZaloPay-QR</field>
+    <field name="sequence">0</field>
+    <field name="image" type="base64" file="payment_zalopay/static/description/icon.png" />
+    <field name="is_online_payment" eval="True" />
+    <field name="has_an_online_payment_provider" eval="True" />
+  </record>
+</odoo>

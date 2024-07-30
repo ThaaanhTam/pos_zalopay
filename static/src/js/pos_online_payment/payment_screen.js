@@ -8,10 +8,11 @@
 // import { ErrorPopup } from "@point_of_sale/app/errors/popups/error_popup";
 // import { floatIsZero } from "@web/core/utils/numbers";
 
-// // Overide to show QR code using qrCodeData created by get_payment_qr API
+// // Override to show QR code using qrCodeData created by get_payment_qr API
 // patch(PaymentScreen.prototype, {
 //     async _isOrderValid(isForceValidate) {
-//         console.log("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+//         console.log("Start validating order");
+
 //         if (!await super._isOrderValid(...arguments)) {
 //             return false;   
 //         }
@@ -27,11 +28,9 @@
 
 //         const onlinePaymentLines = this.getRemainingOnlinePaymentLines();
 //         if (onlinePaymentLines.length > 0) {
-//             // Send the order to the server everytime before the online payments process to
+//             // Send the order to the server every time before the online payments process to
 //             // allow the server to get the data for online payments and link the successful
 //             // online payments to the order.
-//             // The validation process will be done by the server directly after a successful
-//             // online payment that makes the order fully paid.
 //             this.currentOrder.date_order = luxon.DateTime.now();
 //             this.currentOrder.save_to_db();
 //             this.pos.addOrderToUpdateSet();
@@ -39,16 +38,12 @@
 //             try {
 //                 await this.pos.sendDraftToServer();
 //             } catch (error) {
-//                 // Code from _finalizeValidation():
+//                 // Handle errors from server response
 //                 if (error.code == 700 || error.code == 701) {
 //                     this.error = true;
 //                 }
 
 //                 if ("code" in error) {
-//                     // We started putting `code` in the rejected object for invoicing error.
-//                     // We can continue with that convention such that when the error has `code`,
-//                     // then it is an error when invoicing. Besides, _handlePushOrderError was
-//                     // introduce to handle invoicing error logic.
 //                     await this._handlePushOrderError(error);
 //                 }
 //                 this.showSaveOrderOnServerErrorPopup();
@@ -60,7 +55,12 @@
 //                 return false;
 //             }
 
-//             if (!this.currentOrder.server_id) {
+//             // Fetch order URL from API
+//             const response = await fetch(`/pos/zalopay/get_payment_qr?order_id=${this.currentOrder.server_id}`);
+//             const data = await response.json();
+//             const orderUrl = data.order_url;
+
+//             if (!orderUrl) {
 //                 this.cancelOnlinePayment(this.currentOrder);
 //                 this.popup.add(ErrorPopup, {
 //                     title: _t("Online payment unavailable"),
@@ -68,13 +68,13 @@
 //                 });
 //                 return false;
 //             }
-//             const qrCodeImgSrc = qrCodeSrc(`${this.pos.base_url}/pos/pay/${this.currentOrder.server_id}?access_token=${this.currentOrder.access_token}`);
+
+//             const qrCodeImgSrc = qrCodeSrc(orderUrl);
 
 //             let prevOnlinePaymentLine = null;
 //             let lastOrderServerOPData = null;
 //             for (const onlinePaymentLine of onlinePaymentLines) {
 //                 const onlinePaymentLineAmount = onlinePaymentLine.get_amount();
-//                 // The local state is not aware if the online payment has already been done.
 //                 lastOrderServerOPData = await this.currentOrder.update_online_payments_data_with_server(this.pos.orm, onlinePaymentLineAmount);
 //                 if (!lastOrderServerOPData) {
 //                     this.popup.add(ErrorPopup, {
@@ -134,7 +134,5 @@
 //         }
 
 //         return true;
-//      },
-
-  
+//     },
 // });

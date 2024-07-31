@@ -53,10 +53,13 @@ _logger = logging.getLogger(__name__)
 #             _logger.error("Lỗi khi gọi API ZaloPay: %s", e)
 #             return Response(json.dumps({'error': str(e)}), status=500, mimetype='application/json')
 class ZaloPayController(http.Controller):
-    @http.route('/api/zalopay/get_payment_qr', type='http', auth='user', methods=['GET'], csrf=False)
+    @http.route('/api/zalopay/get_payment_qr',
+                 type='http', auth='user',
+                   methods=['GET'],
+                     csrf=False)
     def get_payment_qr(self, order_id, access_token):
         # Giả định URL mã QR từ ZaloPay
-        qr_code_url = f"https://qcgateway.zalopay.vn/openinapp?order=eyJ6cHRyYW5zdG9rZW4iOiJBQ0l6aFR0Mm1kTVVVZEpTRnphVGVuQWciLCJhcHBpZCI6MjU1NH0="
+        qr_code_url = f"https://qcgateway.zalopay.vn/openinapp?order=eyJ6cHRyYW5zdG9rZW4iOiJBQ1k1OTd2b1BMd0JBZ3pEV1VTMVFWamciLCJhcHBpZCI6MjU1NH0="
         
         _logger.info("Generated QR code URL: %s", qr_code_url)
 

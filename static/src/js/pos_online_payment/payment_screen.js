@@ -7,6 +7,8 @@ import { OnlinePaymentPopup } from "@pos_online_payment/app/utils/online_payment
 import { ConfirmPopup } from "@point_of_sale/app/utils/confirm_popup/confirm_popup";
 import { ErrorPopup } from "@point_of_sale/app/errors/popups/error_popup";
 import { floatIsZero } from "@web/core/utils/numbers";
+import { qrCodeSrc } from "@point_of_sale/utils";
+
 
 // Function to call ZaloPay API and get QR code URL
 async function getZaloPayQrCode(orderId, accessToken) {
@@ -22,7 +24,6 @@ async function getZaloPayQrCode(orderId, accessToken) {
 patch(PaymentScreen.prototype, {
     
     async _isOrderValid(isForceValidate) {
-        console.log(`aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa`);
 
         if (!await super._isOrderValid(...arguments)) {
             return false;
@@ -74,7 +75,9 @@ patch(PaymentScreen.prototype, {
 
             let qrCodeImgSrc;
             try {
-                qrCodeImgSrc = await getZaloPayQrCode(this.currentOrder.server_id, this.currentOrder.access_token);
+
+                const data = await getZaloPayQrCode(this.currentOrder.server_id, this.currentOrder.access_token);
+                qrCodeImgSrc = qrCodeSrc(data)
             } catch (error) {
                 this.cancelOnlinePayment(this.currentOrder);
                 this.popup.add(ErrorPopup, {

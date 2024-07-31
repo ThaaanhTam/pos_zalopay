@@ -59,7 +59,7 @@ class ZaloPayController(http.Controller):
                      csrf=False)
     def get_payment_qr(self, order_id, access_token):
         # Giả định URL mã QR từ ZaloPay
-        qr_code_url = f"https://qcgateway.zalopay.vn/openinapp?order=eyJ6cHRyYW5zdG9rZW4iOiJBQzRNUlZOVURLSDF3UEhVMm4wT0pNVGciLCJhcHBpZCI6MjU1NH0="
+        qr_code_url = f"https://qcgateway.zalopay.vn/openinapp?order=eyJ6cHRyYW5zdG9rZW4iOiJBQ3VaSGI2eHRVUkpYYkdldnBUNzNDWFEiLCJhcHBpZCI6MjU1NH0="
         
         qr = qrcode.QRCode(version=1, box_size=10, border=5)
 

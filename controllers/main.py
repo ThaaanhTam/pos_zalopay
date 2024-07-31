@@ -21,63 +21,33 @@ from odoo.http import request
 
 _logger = logging.getLogger(__name__)
 
-class PaymentZaloPayPortal(payment_portal.PaymentPortal):
-    _create_qr_url = "/pos/zalopay/get_payment_qr"
-    _pos_ipn_url = "/pos/zalopay/callback"
+class ZaloPayController(http.Controller):
+    @http.route('/api/zalopay/get_payment_qr', type='http', auth='user', methods=['GET'], csrf=False)
+    def get_payment_qr(self, order_id, access_token):
+        # Thay đổi URL và các thông số theo API của ZaloPay
+        zalopay_url = "https://sb-openapi.zalopay.vn/v2/create"  # URL API của ZaloPay (thay đổi URL nếu cần)
+        
+        headers = {
+            'Content-Type': 'application/json',
+        }
 
-    def create_new_transaction(self, pos_order_sudo, zalopay, order_amount):
+        payload = {
+            'order_id': order_id,
+            'access_token': access_token,
+            # Thêm các thông số khác nếu cần
+        }
+
         try:
-            # Get the access token of the POS order
-            access_token = pos_order_sudo.access_token
+            response = requests.post(zalopay_url, headers=headers, json=payload)
+            response.raise_for_status()  # Raise an error for bad status codes
+            data = response.json()
+            
+            # Lấy URL mã QR từ phản hồi của ZaloPay
+            qr_code_url = data.get('order_url')
+            if not qr_code_url:
+                raise ValueError("Không tìm thấy URL mã QR trong phản hồi của ZaloPay")
 
-            # Get the ZALOPay QR payment method
-            zalopay_qr_method = request.env["payment.method"].sudo().search([("code", "=", "zalopayqr")], limit=1)
-            if not zalopay_qr_method:
-                raise UserError(_("ZALOPay QR payment method not found."))
-
-            # Get the user and partner of the user
-            user_sudo = request.env.user
-            partner_sudo = pos_order_sudo.partner_id or self._get_partner_sudo(user_sudo)
-
-            # Prepare transaction data
-            prefix_kwargs = {
-                "pos_order_id": pos_order_sudo.id,
-            }
-            transaction_data = {
-                "provider_id": zalopay.id,
-                "payment_method_id": zalopay_qr_method.id,
-                "partner_id": partner_sudo.id,
-                "partner_phone": partner_sudo.phone,
-                "token_id": None,
-                "amount": int(order_amount),
-                "flow": "direct",
-                "tokenization_requested": False,
-                "landing_route": "",
-                "is_validation": False,
-                "access_token": access_token,
-                "reference_prefix": request.env["payment.transaction"]
-                .sudo()
-                ._compute_reference_prefix(
-                    provider_code="zalopay", separator="-", **prefix_kwargs
-                ),
-                "custom_create_values": {
-                    "pos_order_id": pos_order_sudo.id,
-                    "tokenize": False,
-                },
-            }
-
-            # Check if the currency is valid
-            currency = pos_order_sudo.currency_id
-            if not currency.active:
-                raise ValidationError(_("The currency is invalid."))
-            # Ignore the currency provided by the customer
-            transaction_data["currency_id"] = currency.id
-
-            # Create a new transaction
-            tx_sudo = self._create_transaction(**transaction_data)
-
-            return tx_sudo
-
-        except (AccessError, ValidationError, UserError) as e:
-            _logger.error("Error creating transaction: %s", str(e))
-            raise
+            return Response(json.dumps({'qr_code_url': qr_code_url}), status=200, mimetype='application/json')
+        except requests.exceptions.RequestException as e:
+            _logger.error("Lỗi khi gọi API ZaloPay: %s", e)
+            return Response(json.dumps({'error': str(e)}), status=500, mimetype='application/json')

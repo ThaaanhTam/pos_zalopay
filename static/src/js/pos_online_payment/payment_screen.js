@@ -8,6 +8,16 @@ import { ConfirmPopup } from "@point_of_sale/app/utils/confirm_popup/confirm_pop
 import { ErrorPopup } from "@point_of_sale/app/errors/popups/error_popup";
 import { floatIsZero } from "@web/core/utils/numbers";
 
+// Function to call ZaloPay API and get QR code URL
+async function getZaloPayQrCode(orderId, accessToken) {
+    const response = await fetch(`/api/zalopay/get_payment_qr?order_id=${orderId}&access_token=${accessToken}`);
+    if (!response.ok) {
+        throw new Error("Failed to get ZaloPay QR code");
+    }
+    const data = await response.json();
+    return data.qr_code_url;
+}
+
 // Override to show QR code using qrCodeData created by get_payment_qr API
 patch(PaymentScreen.prototype, {
     async _isOrderValid(isForceValidate) {
@@ -59,7 +69,10 @@ patch(PaymentScreen.prototype, {
                 return false;
             }
 
-            if (!this.currentOrder.server_id) {
+            let qrCodeImgSrc;
+            try {
+                qrCodeImgSrc = await getZaloPayQrCode(this.currentOrder.server_id, this.currentOrder.access_token);
+            } catch (error) {
                 this.cancelOnlinePayment(this.currentOrder);
                 this.popup.add(ErrorPopup, {
                     title: _t("Online payment unavailable"),
@@ -67,7 +80,6 @@ patch(PaymentScreen.prototype, {
                 });
                 return false;
             }
-            const qrCodeImgSrc = qrCodeSrc(`${this.pos.base_url}/pos/pay/${this.currentOrder.server_id}?access_token=${this.currentOrder.access_token}`);
 
             let prevOnlinePaymentLine = null;
             let lastOrderServerOPData = null;

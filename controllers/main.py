@@ -54,13 +54,31 @@ _logger = logging.getLogger(__name__)
 #             return Response(json.dumps({'error': str(e)}), status=500, mimetype='application/json')
 class ZaloPayController(http.Controller):
     @http.route('/api/zalopay/get_payment_qr',
-                 type='http', auth='user',
-                   methods=['GET'],
+                 type='json', auth='public',
+                   methods=['POST'],
                      csrf=False)
     def get_payment_qr(self, order_id, access_token):
         # Giả định URL mã QR từ ZaloPay
-        qr_code_url = f"https://qcgateway.zalopay.vn/openinapp?order=eyJ6cHRyYW5zdG9rZW4iOiJBQ202TFhjSG5lci1qSXdaMzFBdU1tRGciLCJhcHBpZCI6MjU1NH0="
+        qr_code_url = f"https://qcgateway.zalopay.vn/openinapp?order=eyJ6cHRyYW5zdG9rZW4iOiJBQzRNUlZOVURLSDF3UEhVMm4wT0pNVGciLCJhcHBpZCI6MjU1NH0="
         
-        _logger.info("Generated QR code URL: %s", qr_code_url)
+        qr = qrcode.QRCode(version=1, box_size=10, border=5)
 
-        return Response(json.dumps({'qr_code_url': qr_code_url}), status=200, mimetype='application/json')
+        qr.add_data(qr_code_url)
+        qr.make(fit=True)
+
+        img = qr.make_image(fill='black', back_color='white')
+        buffer = BytesIO()
+        img.save(buffer, format="PNG")
+
+        # Get the content of the BytesIO object as bytes
+        img_bytes = buffer.getvalue()
+
+        # Convert the bytes to a base64 string
+        img_base64 = (
+            "data:image/png;base64," + base64.b64encode(img_bytes).decode()
+        )
+
+
+
+        _logger.info("Tạo thành cônggggggg")
+        return img_base64

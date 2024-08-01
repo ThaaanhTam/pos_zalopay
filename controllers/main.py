@@ -245,7 +245,7 @@ class ZaloPayController(http.Controller):
         methods=["POST"],
         csrf=False,
     )
-    def zalopay_callback(self, **kwargs):
+    def zalopay_callback(self, **post):
         """Xử lý callback từ ZaloPay."""
         
         logging.info("xử lý callbackkkkkkkkkkkkkkkkkkkkkkkkkkkk")
@@ -275,11 +275,18 @@ class ZaloPayController(http.Controller):
             # Nếu MAC hợp lệ, trả về thành công
             _logger.info("MAC hợp lệ. Callback xử lý thành công.")
 
+            data = post.get('data', {})
+            app_trans_id = data.get('app_trans_id')
+            amount = data.get('amount')
 
+            _logger.info("Mã giao dịch ZaloPay nhận được: %s", app_trans_id)
+            _logger.info("Số tiền nhận được: %d", amount)
             pos_order = request.env["pos.order"].sudo().search([("name", "=", data.get("app_trans_id"))], limit=1)
 
 
             if not pos_order:
+                _logger.error("Không tìm thấy đơn hàng với mã tham chiếu: %s", app_trans_id)
+
                 raise ValidationError(_("Không tìm thấy đơn hàng với mã tham chiếu."))
 
             # Kiểm tra số tiền

@@ -298,7 +298,11 @@ class ZaloPayController(http.Controller):
                     .sudo()
                     .search([('app_trans_id', '=', app_trans_id)], limit=1)
                 )
-                _logger.info("Kết quả tìm kiếm đơn hàng: %s", tx_sudo)
+                all_transactions = request.env['pos.order'].sudo().search([])
+                for tx in all_transactions:
+                    _logger.info("Giao dịch hiện có: %s với app_trans_id: %s", tx.id, tx.app_trans_id)
+                _logger.info("Kết quả tìm kiếm đơn hàng: %s", tx_sudo.app_trans_id)
+                
 
             
             # Xử lý thanh toán thành công

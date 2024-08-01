@@ -244,12 +244,10 @@ class ZaloPayController(http.Controller):
     )
     def zalopay_callback(self):
         """Xử lý callback từ ZaloPay."""
-        result = {}
-        logging.info("xử lý callback")
         
-        # Thông báo kết quả cho ZaloPay server
-        return result
-
+        logging.info("xử lý callbackkkkkkkkkkkkkkkkkkkkkkkkkkkk")
+        
+        
 
 
 

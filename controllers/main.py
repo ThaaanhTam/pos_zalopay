@@ -287,43 +287,21 @@ class ZaloPayController(http.Controller):
 
             # Nếu MAC hợp lệ, trả về thành công
             _logger.info("MAC hợp lệ. Callback xử lý thành công.")
-
-            data = post.get('data', {})
-            app_trans_id = data.get('app_trans_id')
-            amount = data.get('amount')
-
-            _logger.info("Mã giao dịch ZaloPay nhận được: %s", app_trans_id)
-            _logger.info("Số tiền nhận được: %d", amount)
-            pos_order = request.env["pos.order"].sudo().search([("name", "=", data.get("app_trans_id"))], limit=1)
-
-
-            if not pos_order:
-                _logger.error("Không tìm thấy đơn hàng với mã tham chiếu: %s", app_trans_id)
-
-                raise ValidationError(_("Không tìm thấy đơn hàng với mã tham chiếu."))
-
-            # Kiểm tra số tiền
-            order_amount = pos_order.amount_total
-            received_amount = data.get("amount")
-            if int(received_amount) != int(order_amount):
-                raise ValidationError(_("Số tiền không khớp."))
-
-            # Tạo giao dịch mới
-            transaction = self.create_new_transaction(pos_order, zalopay, order_amount)
-
-            # Cập nhật thông tin giao dịch
-            transaction.provider_reference = data.get("zp_trans_id")
-
+            tx_sudo = (
+                request.env["pos.order"]
+                .sudo()
+                .search([('app_trans_id', '=', data['app_trans_id'])], limit=1)
+            )
+            
             # Xử lý thanh toán thành công
             if data.get("status") == 1:  # Giả sử 1 là thành công
-                transaction._set_done()
-                transaction._process_pos_online_payment()
                 _logger.info("Thanh toán đã được lưu thành công.")
+                tx_sudo._set_done()
+                tx_sudo._process_pos_online_payment()
                 return json.dumps({"return_code": 1, "return_message": "Đặt hàng thành công."})
 
             else:
                 _logger.warning("Mã phản hồi không hợp lệ: %s", data.get("status"))
-                transaction._set_error(f"ZaloPay: Mã lỗi: {data.get('status')}")
                 return json.dumps({"return_code": 2, "return_message": f"Nhận dữ liệu với mã lỗi: {data.get('status')}"})
 
         except Forbidden:

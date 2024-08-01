@@ -239,7 +239,7 @@ class ZaloPayController(http.Controller):
         _callback_url,
         type="http",
         auth="public",
-        methods=["POST"],
+        methods=["GET"],
         csrf=False,
     )
     def zalopay_callback(self, **kwargs):

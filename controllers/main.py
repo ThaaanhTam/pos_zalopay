@@ -273,7 +273,11 @@ class ZaloPayController(http.Controller):
             _logger.info("MAC hợp lệ. Callback xử lý thành công.")
 
 
-            pos_order = request.env["pos.order"].sudo().search([("name", "=", data.get("app_trans_id"))], limit=1)
+            pos_order = (
+                request.env["pos.order"]
+                .sudo()
+                .search([("id", "=", data.get("txnId"))], limit=1)
+            )
 
 
             if not pos_order:

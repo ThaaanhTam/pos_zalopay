@@ -2,6 +2,7 @@ import hmac
 import hashlib
 import logging
 import requests as pyreq
+from odoo.http import request
 import json
 import random
 from io import BytesIO
@@ -15,7 +16,7 @@ _logger = logging.getLogger(__name__)
 class ZaloPayController(http.Controller):
 
     _create_qr_url = "/api/zalopay/get_payment_qr"
-    _pos_ipn_url = "/pos/vnpay/webhook"
+    _pos_ipn_url = "/pos/zalopay/callback"
 
     @http.route(
             _create_qr_url,
@@ -56,6 +57,8 @@ class ZaloPayController(http.Controller):
                 "amount": amount,  # Example amount in VND
                 "description": "Payment for order",
                 "bank_code": "zalopayapp",
+                "callback_url": request.httprequest.url_root + 'payment/zalopay/callback',
+
             }
 
             _logger.info("Data for API request: %s", data)

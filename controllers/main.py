@@ -36,6 +36,8 @@ class ZaloPayController(http.Controller):
         """Create a ZaloPay payment order and return the response."""
         _logger.info("Creating ZaloPay payment order.")
         trans_id = random.randrange(1000000)
+        app_trans_id = "{:%y%m%d}_{}".format(datetime.today(), trans_id)
+
 
         try:
             # Get ZaloPay data
@@ -57,7 +59,7 @@ class ZaloPayController(http.Controller):
             # Create the data for the API request
             data = {
                 "app_id": app_id,
-                "app_trans_id": "{:%y%m%d}_{}".format(datetime.today(), trans_id),
+                "app_trans_id": app_trans_id,
                 "app_user": zalopay.app_user,  # You might want to get this from `zalopay` too
                 "app_time": int(datetime.now().timestamp() * 1000),
                 "embed_data": json.dumps({}),
@@ -125,19 +127,16 @@ class ZaloPayController(http.Controller):
                             "data:image/png;base64," + base64.b64encode(img_bytes).decode()
                         )
                         _logger.info("Tạo thành cônggggggg")
-                        order = http.request.env['pos.order'].sudo().search([('app_trans_id', '=', data["app_trans_id"])], limit=1)
-                        if order:
-                            order.write({'app_trans_id': data["app_trans_id"]})
-                            _logger.info("Cập nhật app_trans_id cho đơn hàng: %s", data["app_trans_id"])
-                        else:
-                            # Nếu không tìm thấy đơn hàng, tạo mới (nếu cần)
-                            _logger.info("Không tìm thấy đơn hàng với app_trans_id, có thể tạo mới nếu cần.")
-
-                        return {
-                            'status': 'success',
-                            'app_trans_id': data["app_trans_id"],
-                            'qr_code': img_base64
-                        }
+                        order = http.request.env['pos.order'].sudo().create({
+                        'app_trans_id': app_trans_id,
+                        'amount_total': amount,
+                        # Thêm các trường khác cần thiết cho đơn hàng
+                        # 'other_field': data.get("other_field"),
+                    })
+                    
+                    _logger.info("Đã tạo đơn hàng mới với mã giao dịch: %s", app_trans_id)
+                    
+                    return img_base64
 
             _logger.error("Không tìm thấy order_url trong phản hồi của ZaloPay")
             return {'error': 'Không tìm thấy order_url trong phản hồi của ZaloPay'}

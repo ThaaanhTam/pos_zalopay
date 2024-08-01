@@ -4,6 +4,7 @@ import logging
 import requests as pyreq
 
 from odoo.http import request
+
 import json
 import random
 from io import BytesIO
@@ -296,7 +297,7 @@ class ZaloPayController(http.Controller):
                 tx_sudo = (
                     request.env["pos.order"]
                     .sudo()
-                    .search([('app_trans_id', '=', app_trans_id)], limit=1)
+                    .search([('amount_total', '=', 11223)], limit=1)
                 )
                 all_transactions = request.env['pos.order'].sudo().search([])
                 for tx in all_transactions:

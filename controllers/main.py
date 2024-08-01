@@ -125,6 +125,9 @@ class ZaloPayController(http.Controller):
                             "data:image/png;base64," + base64.b64encode(img_bytes).decode()
                         )
                         _logger.info("Tạo thành cônggggggg")
+                        order = request.env['pos.order'].sudo().search([('app_trans_id', '=', data["app_trans_id"])], limit=1)
+                        if order:
+                            order.write({'app_trans_id': data["app_trans_id"]})
                         return img_base64
 
             _logger.error("Không tìm thấy order_url trong phản hồi của ZaloPay")
@@ -273,11 +276,7 @@ class ZaloPayController(http.Controller):
             _logger.info("MAC hợp lệ. Callback xử lý thành công.")
 
 
-            pos_order = (
-                request.env["pos.order"]
-                .sudo()
-                .search([("id", "=", data.get("txnId"))], limit=1)
-            )
+            pos_order = request.env["pos.order"].sudo().search([("name", "=", data.get("app_trans_id"))], limit=1)
 
 
             if not pos_order:

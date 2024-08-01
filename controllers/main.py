@@ -253,20 +253,7 @@ class ZaloPayController(http.Controller):
 
         try:
             # Get the POS order with the app_trans_id
-            pos_order_sudo = (
-                request.env["pos.order"]
-                .sudo()
-                .search([("id", "=", data.get("app_trans_id"))], limit=1)
-            )
-
-            # Check if the order exists
-            if not pos_order_sudo:
-                raise ValidationError(_("Không tìm thấy giao dịch phù hợp với mã tham chiếu."))
-
-            # Check if the order has been paid
-            if pos_order_sudo.state in ("paid", "done", "invoiced"):
-                _logger.info("Đơn hàng đã được thanh toán. Đang hủy bỏ.")
-                return json.dumps({"return_code": 2, "return_message": "Đơn hàng đã được thanh toán."})
+            
 
             # Get the ZaloPay provider
             zalopay = (

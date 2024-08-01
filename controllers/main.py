@@ -128,7 +128,7 @@ class ZaloPayController(http.Controller):
                         )
                         _logger.info("Tạo thành cônggggggg")
                         http.request.env['pos.order'].sudo().write({'app_trans_id': data["app_trans_id"]})
-                        _logger.info("Đã lưu app_trans_id: %s vào đơn hàng với ID: %s", data["app_trans_id"], pos_order.id)
+                        _logger.info("Đã lưu app_trans_id: %s vào đơn hàng với ID:", data["app_trans_id"])
 
                     
                     _logger.info("Đã tạo đơn hàng mới với mã giao dịch: %s", app_trans_id)

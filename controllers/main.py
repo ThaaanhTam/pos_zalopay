@@ -237,7 +237,7 @@ class ZaloPayController(http.Controller):
             
     @http.route(
         _callback_url,
-        type="http",
+        type="json",
         auth="public",
         methods=["POST"],
         csrf=False,

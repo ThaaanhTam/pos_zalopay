@@ -247,7 +247,8 @@ class ZaloPayController(http.Controller):
         
         logging.info("xử lý callbackkkkkkkkkkkkkkkkkkkkkkkkkkkk")
 
-        data = request.httprequest.get_data()
+        aa = request.httprequest.get_data()
+        data = json.loads(aa)
         _logger.info("Nhận dữ liệu callback từ ZaloPay: %s", data)
 
         try:

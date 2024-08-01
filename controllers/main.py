@@ -6,11 +6,11 @@ import pytz
 import base64
 import requests as pyreq
 import json
+import random
 
 from io import BytesIO
-from decimal import Decimal
+from decimal import *
 from werkzeug.urls import url_encode
-from werkzeug.wrappers import Response
 from datetime import datetime, timedelta
 from werkzeug.exceptions import Forbidden
 
@@ -22,63 +22,129 @@ from odoo.http import request
 
 _logger = logging.getLogger(__name__)
 
-# class ZaloPayController(http.Controller):
-#     @http.route('/api/zalopay/get_payment_qr', type='http', auth='user', methods=['GET'], csrf=False)
-#     def get_payment_qr(self, order_id, access_token):
-#         # Thay đổi URL và các thông số theo API của ZaloPay
-#         zalopay_url = "https://sb-openapi.zalopay.vn/v2/create"  # URL API của ZaloPay (thay đổi URL nếu cần)
-        
-#         headers = {
-#             'Content-Type': 'application/json',
-#         }
+class ZaloPayController(payment_portal.PaymentPortal):
 
-#         payload = {
-#             'order_id': order_id,
-#             'access_token': access_token,
-#             # Thêm các thông số khác nếu cần
-#         }
+    _create_qr_url = "/api/zalopay/get_payment_qr"
+    _pos_ipn_url = "/pos/zalopay/callback"
 
-#         try:
-#             response = requests.post(zalopay_url, headers=headers, json=payload)
-#             response.raise_for_status()  # Raise an error for bad status codes
-#             data = response.json()
+
+
+    @http.route(
+            _create_qr_url,
+            type='json',
+            auth='public', 
+            methods=['POST'], 
+            csrf=False)
+    def get_payment_qr(self, amount):
+        """Tạo đơn hàng thanh toán ZaloPay và trả về phản hồi."""
+        _logger.info("Đang tạo đơn hàng thanh toán ZaloPay.")
+        trans_id = random.randrange(1000000)
+       
+        try:
+            # Lấy thông tin ZaloPay
+            zalopay = (
+                http.request.env["payment.provider"]
+                .sudo()
+                .search([("code", "=", "zalopay")], limit=1)
+            )
             
-#             # Lấy URL mã QR từ phản hồi của ZaloPay
-#             qr_code_url = data.get('order_url')
-#             if not qr_code_url:
-#                 raise ValueError("Không tìm thấy URL mã QR trong phản hồi của ZaloPay")
+            if not zalopay:
+                raise ValueError("Không tìm thấy nhà cung cấp ZaloPay")
+            
+            _logger.info("Đã tìm thấy nhà cung cấp ZaloPay: %s", zalopay)
+            app_id = int(zalopay.appid)
+            key1 = zalopay.key1
 
-#             return Response(json.dumps({'qr_code_url': qr_code_url}), status=200, mimetype='application/json')
-#         except requests.exceptions.RequestException as e:
-#             _logger.error("Lỗi khi gọi API ZaloPay: %s", e)
-#             return Response(json.dumps({'error': str(e)}), status=500, mimetype='application/json')
-class ZaloPayController(http.Controller):
-    @http.route('/api/zalopay/get_payment_qr',
-                 type='json', auth='public',
-                   methods=['POST'],
-                     csrf=False)
-    def get_payment_qr(self, order_id, access_token):
-        # Giả định URL mã QR từ ZaloPay
-        qr_code_url = f"https://qcgateway.zalopay.vn/openinapp?order=eyJ6cHRyYW5zdG9rZW4iOiJBQ3VaSGI2eHRVUkpYYkdldnBUNzNDWFEiLCJhcHBpZCI6MjU1NH0="
-        
-        qr = qrcode.QRCode(version=1, box_size=10, border=5)
+            # Lấy thông tin đơn hàng
+            # order = http.request.env['sale.order'].sudo().browse(int(order_id))
+            # if not order:
+            #     raise ValueError("Không tìm thấy đơn hàng")
 
-        qr.add_data(qr_code_url)
-        qr.make(fit=True)
+            # Tạo dữ liệu cho yêu cầu API
+            data = {
+                "app_id": app_id,
+                "app_trans_id": "{:%y%m%d}_{}".format(datetime.today(), trans_id),
+                "app_user": zalopay.app_user,
+                "app_time": int(datetime.now().timestamp() * 1000),
+                "embed_data": json.dumps({}),
+                "item": json.dumps([{
+                    "id": str(id),
+                    "name": "aaaa",
+                    "price": int(1200),
+                    "quantity": 1
+                }]),
+                "amount": str(amount),
+                "description": f"Thanh toán cho đơn hàng ",
+                "bank_code": "zalopayapp",
+                "callback_url": request.httprequest.host_url + '/payment/zalopay/callback',
+                
+            }
 
-        img = qr.make_image(fill='black', back_color='white')
-        buffer = BytesIO()
-        img.save(buffer, format="PNG")
+            _logger.info("Dữ liệu cho yêu cầu API: %s", data)
 
-        # Get the content of the BytesIO object as bytes
-        img_bytes = buffer.getvalue()
+            # Tạo chuỗi để tạo checksum
+            data_string = "|".join([
+                str(data["app_id"]),  
+                data["app_trans_id"],
+                data["app_user"],
+                str(data["amount"]),
+                str(data["app_time"]),
+                data["embed_data"],
+                data["item"]
+            ])
+            _logger.info("Chuỗi dữ liệu cho checksum: %s", data_string)
+            
+            # Tạo checksum
+            data["mac"] = hmac.new(key1.encode(), data_string.encode(), hashlib.sha256).hexdigest()
 
-        # Convert the bytes to a base64 string
-        img_base64 = (
-            "data:image/png;base64," + base64.b64encode(img_bytes).decode()
-        )
+            qr_create_url = "https://sb-openapi.zalopay.vn/v2/create"
+            _logger.info("URL tạo QR: %s", qr_create_url)
 
+            data_json = json.dumps(data)
+            _logger.info("Dữ liệu JSON cho yêu cầu POST: %s", data_json)
 
+            # Gửi yêu cầu POST đến URL tạo QR của ZaloPay
+            response = pyreq.post(
+                qr_create_url,
+                data=data_json,
+                headers={"Content-Type": "application/json"},
+            )
 
-        _logger.info("Tạo thành cônggggggg")
-        return img_base64
+            _logger.info("Mã trạng thái phản hồi: %d", response.status_code)
+            _logger.info("Nội dung phản hồi: %s", response.text)
+
+            response_data = response.json()
+            if response.status_code == 200:
+                if response_data.get("return_code") == 1:  
+                    order_url = response_data.get("order_url")
+                    if order_url:
+                        _logger.info("URL đơn hàng: %s", order_url)
+                        qr = qrcode.QRCode(version=1, box_size=10, border=5)
+
+                        qr.add_data(order_url)
+                        qr.make(fit=True)
+
+                        img = qr.make_image(fill='black', back_color='white')
+                        buffer = BytesIO()
+                        img.save(buffer, format="PNG")
+
+                        img_bytes = buffer.getvalue()
+
+                        img_base64 = (
+                            "data:image/png;base64," + base64.b64encode(img_bytes).decode()
+                        )
+                        _logger.info("Tạo QR thành công")
+                        return img_base64
+                    else:
+                        _logger.error("Không tìm thấy order_url trong phản hồi của ZaloPay")
+                        return {'error': 'Không tìm thấy order_url trong phản hồi của ZaloPay'}
+                else:
+                    _logger.error("Lỗi từ ZaloPay: %s", response_data.get("return_message"))
+                    return {'error': response_data.get("return_message")}
+            else:
+                _logger.error("Yêu cầu tạo QR thất bại với mã trạng thái: %d", response.status_code)
+                return {'error': 'Yêu cầu tạo QR thất bại'}
+
+        except Exception as e:
+            _logger.error("Lỗi khi tạo đơn hàng thanh toán ZaloPay: %s", e)
+            return {'error': str(e)}

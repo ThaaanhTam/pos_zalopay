@@ -85,8 +85,8 @@ patch(PaymentScreen.prototype, {
           "/api/zalopay/get_payment_qr",
           {
             // orderId: lastOrderServerOPData.id,
-            // amount: onlinePaymentLineAmount,
-            order_id: '1', access_token: '1',
+            amount: onlinePaymentLineAmount,
+            
           }
         );
 

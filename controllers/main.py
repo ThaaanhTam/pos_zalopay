@@ -128,7 +128,7 @@ class ZaloPayController(http.Controller):
                         order = request.env['pos.order'].sudo().search([('app_trans_id', '=', data["app_trans_id"])], limit=1)
                         if order:
                             order.write({'app_trans_id': data["app_trans_id"]})
-                        return img_base64
+                        return img_base64   
 
             _logger.error("Không tìm thấy order_url trong phản hồi của ZaloPay")
             return {'error': 'Không tìm thấy order_url trong phản hồi của ZaloPay'}

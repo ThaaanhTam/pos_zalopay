@@ -237,12 +237,12 @@ class ZaloPayController(http.Controller):
             
     @http.route(
         _callback_url,
-        type="json",
+        type="http",
         auth="public",
         methods=["POST"],
         csrf=False,
     )
-    def zalopay_callback(self):
+    def zalopay_callback(self, **post):
         """Xử lý callback từ ZaloPay."""
         
         logging.info("xử lý callbackkkkkkkkkkkkkkkkkkkkkkkkkkkk")

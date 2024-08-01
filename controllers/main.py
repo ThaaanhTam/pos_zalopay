@@ -263,8 +263,8 @@ class ZaloPayController(http.Controller):
             )
 
             # Verify the callback data
-            data_string = f"{data['app_id']}|{data['app_trans_id']}|{data['app_user']}|{data['amount']}|{data['app_time']}|{data['embed_data']}|{data['item']}"
-            mac = hmac.new(zalopay.key2.encode(), data_string.encode(), hashlib.sha256).hexdigest()
+            # data_string = f"{data['app_id']}|{data['app_trans_id']}|{data['app_user']}|{data['amount']}|{data['app_time']}|{data['embed_data']}|{data['item']}"
+            mac = hmac.new(zalopay.key2.encode(), data['data'].encode(), hashlib.sha256).hexdigest()
 
             if mac != data['mac']:
                 raise Forbidden(_("Nhận dữ liệu với chữ ký không hợp lệ."))

@@ -242,39 +242,13 @@ class ZaloPayController(http.Controller):
         methods=["POST"],
         csrf=False,
     )
-    def zalopay_callback(self, **post):
+    def zalopay_callback(self, **kwargs):
         """Xử lý callback từ ZaloPay."""
         
         logging.info("xử lý callbackkkkkkkkkkkkkkkkkkkkkkkkkkkk")
 
-        # Get the data from the request
-        try:
-            # Lấy dữ liệu thô từ phần thân của yêu cầu
-            raw_data = request.httprequest.get_data()
-            _logger.info("Dữ liệu thô nhận được: %s", raw_data)
-            
-            # Nếu dữ liệu rỗng, ghi log và trả về lỗi
-            if not raw_data:
-                _logger.error("Dữ liệu thô trống.")
-                return "No data received", 400
-            
-            # Giải mã dữ liệu JSON
-            try:
-                cbdata = json.loads(raw_data)
-            except json.JSONDecodeError as e:
-                _logger.error("Lỗi khi giải mã JSON: %s", e)
-                return "Invalid JSON", 400
-            
-            _logger.info("Dữ liệu JSON nhận được: %s", cbdata)
-            
-            # Xử lý dữ liệu ở đây
-
-            # Trả về phản hồi thành công
-            return "Success", 200
-
-        except Exception as e:
-            _logger.error("Lỗi khi xử lý callback: %s", e)
-            return "Error processing request", 500
+        data = request.jsonrequest
+        _logger.info("Nhận dữ liệu callback từ ZaloPay: %s", data)
 
         # try:
         #     # Get the POS order with the app_trans_id

@@ -291,12 +291,14 @@ class ZaloPayController(http.Controller):
                 dataJson = json.loads(data['data'])
                 app_trans_id = dataJson['app_trans_id']
                 _logger.info("Cập nhật trạng thái đơn hàng = success cho app_trans_id = %s", app_trans_id)
-            
+               
+
                 tx_sudo = (
                     request.env["pos.order"]
                     .sudo()
                     .search([('app_trans_id', '=', app_trans_id)], limit=1)
                 )
+                _logger.info("Kết quả tìm kiếm đơn hàng: %s", tx_sudo)
 
             
             # Xử lý thanh toán thành công

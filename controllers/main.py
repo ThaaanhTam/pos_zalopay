@@ -65,7 +65,7 @@ class ZaloPayController(http.Controller):
                 "amount": amount,  # Example amount in VND
                 "description": "Payment for order",
                 "bank_code": "zalopayapp",
-                "callback_url":"",
+                "callback_url": request.httprequest.url_root + '/pos/zalopay/callback',
 
             }
 
@@ -239,19 +239,16 @@ class ZaloPayController(http.Controller):
         _callback_url,
         type="http",
         auth="public",
-        methods=["GET"],
+        methods=["POST"],
         csrf=False,
     )
     def zalopay_callback(self, **kwargs):
         """Xử lý callback từ ZaloPay."""
         
         logging.info("xử lý callbackkkkkkkkkkkkkkkkkkkkkkkkkkkk")
-        logging.info("xử lý callbackkkkkkkkkkkkkkkkkkkkkkkkkkkk")
 
-        data = request.httprequest.get_json()
-        logging.info("xử lý callbackkkkkkkkkkkkkkkkkkkkkkkkkkkk")
-
-        _logger.info("Nhận dữ liệu callback từ ZaloPay: %s", data)
+        raw_data = request.httprequest.get_data()
+        _logger.info("Nhận dữ liệu callback từ ZaloPay: %s", raw_data)
 
         # try:
         #     # Get the POS order with the app_trans_id

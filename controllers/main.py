@@ -248,8 +248,9 @@ class ZaloPayController(http.Controller):
         logging.info("xử lý callbackkkkkkkkkkkkkkkkkkkkkkkkkkkk")
 
         # Get the data from the request
-        raw_data = request.httprequest.data
-        _logger.info(f"Dữ liệu thô nhận được: {raw_data}")
+        raw_data = request.httprequest.get_data()
+        cbdata = json.loads(raw_data)
+        _logger.info("Dữ liệu callback nhận được: %s", cbdata)
 
         # try:
         #     # Get the POS order with the app_trans_id

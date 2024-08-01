@@ -270,38 +270,55 @@ class ZaloPayController(http.Controller):
                 raise Forbidden(_("Nhận dữ liệu với chữ ký không hợp lệ."))
 
             # Nếu MAC hợp lệ, trả về thành công
-            _logger.info("MAC hợp lệ. Tiến hành tạo đơn hàng.")
+            _logger.info("MAC hợp lệ. Callback xử lý thành công.")
 
-            # Lấy thông tin đơn hàng từ dữ liệu callback
-            pos_order_vals = {
-                'partner_id': data.get('partner_id'),
-                'amount_total': data.get('amount'),
-                'session_id': request.env['pos.session'].sudo().search([('state', '=', 'opened')], limit=1).id,
-                'lines': [(0, 0, {
-                    'product_id': data.get('product_id'),
-                    'qty': data.get('quantity'),
-                    'price_unit': data.get('price_unit'),
-                })]
-            }
-            
-            # Tạo đơn hàng
-            pos_order = request.env['pos.order'].sudo().create(pos_order_vals)
-            
-            _logger.info("Đơn hàng đã được tạo thành công: %s", pos_order)
 
-            return json.dumps({"return_code": 1, "return_message": "Xác thực thành công và đơn hàng đã được tạo."})
-        
-        except Forbidden as e:
-            _logger.warning("Lỗi cấm trong quá trình xử lý thông báo: %s", e)
+            pos_order = request.env["pos.order"].sudo().search([("name", "=", data.get("app_trans_id"))], limit=1)
+
+
+            if not pos_order:
+                raise ValidationError(_("Không tìm thấy đơn hàng với mã tham chiếu."))
+
+            # Kiểm tra số tiền
+            order_amount = pos_order.amount_total
+            received_amount = data.get("amount")
+            if int(received_amount) != int(order_amount):
+                raise ValidationError(_("Số tiền không khớp."))
+
+            # Tạo giao dịch mới
+            transaction = self.create_new_transaction(pos_order, zalopay, order_amount)
+
+            # Cập nhật thông tin giao dịch
+            transaction.provider_reference = data.get("zp_trans_id")
+
+            # Xử lý thanh toán thành công
+            if data.get("status") == 1:  # Giả sử 1 là thành công
+                transaction._set_done()
+                transaction._process_pos_online_payment()
+                _logger.info("Thanh toán đã được lưu thành công.")
+                return json.dumps({"return_code": 1, "return_message": "Đặt hàng thành công."})
+
+            else:
+                _logger.warning("Mã phản hồi không hợp lệ: %s", data.get("status"))
+                transaction._set_error(f"ZaloPay: Mã lỗi: {data.get('status')}")
+                return json.dumps({"return_code": 2, "return_message": f"Nhận dữ liệu với mã lỗi: {data.get('status')}"})
+
+        except Forbidden:
+            _logger.warning("Lỗi xác thực trong quá trình xử lý thông báo.")
             return json.dumps({"return_code": 2, "return_message": "Sai thông tin xác thực."})
 
         except ValidationError as e:
             _logger.warning("Lỗi xác thực trong quá trình xử lý thông báo: %s", e)
-            return json.dumps({"return_code": 2, "return_message": "Không tìm thấy Mã đơn hàng trong hệ thống."})
+            return json.dumps({"return_code": 2, "return_message": str(e)})
 
         except Exception as e:
             _logger.error("Lỗi xử lý dữ liệu callback: %s", e)
             return json.dumps({"return_code": 2, "return_message": "Lỗi hệ thống khi xử lý thông tin."})
+
+
+
+            
+
 
 
 

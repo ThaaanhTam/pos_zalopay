@@ -65,7 +65,7 @@ class ZaloPayController(http.Controller):
                 "amount": amount,  # Example amount in VND
                 "description": "Payment for order",
                 "bank_code": "zalopayapp",
-                "callback_url": request.httprequest.url_root + '/pos/zalopay/callback',
+                "callback_url":"",
 
             }
 
@@ -246,8 +246,11 @@ class ZaloPayController(http.Controller):
         """Xử lý callback từ ZaloPay."""
         
         logging.info("xử lý callbackkkkkkkkkkkkkkkkkkkkkkkkkkkk")
+        logging.info("xử lý callbackkkkkkkkkkkkkkkkkkkkkkkkkkkk")
 
         data = request.httprequest.get_json()
+        logging.info("xử lý callbackkkkkkkkkkkkkkkkkkkkkkkkkkkk")
+
         _logger.info("Nhận dữ liệu callback từ ZaloPay: %s", data)
 
         # try:

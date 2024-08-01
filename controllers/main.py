@@ -128,8 +128,9 @@ class ZaloPayController(http.Controller):
                         )
                         _logger.info("Tạo thành cônggggggg")
                         order = http.request.env['pos.order'].sudo().create({
-                        'app_trans_id': app_trans_id,
-                        'amount_total': amount,
+                            'app_trans_id': app_trans_id,
+                            'amount_total': amount,
+                            'session_id': self._get_current_session_id(),
                         # Thêm các trường khác cần thiết cho đơn hàng
                         # 'other_field': data.get("other_field"),
                     })
@@ -144,6 +145,14 @@ class ZaloPayController(http.Controller):
         except Exception as e:
             _logger.error("Error creating ZaloPay payment order: %s", e)
             return {'error': str(e)}
+        
+    def _get_current_session_id(self):
+        """Lấy session_id hiện tại. Cần tùy chỉnh tùy thuộc vào cách quản lý session của bạn."""
+        # Ví dụ: Lấy session_id của phiên POS đang mở
+        session = http.request.env['pos.session'].sudo().search([('state', '=', 'opened')], limit=1)
+        return session.id if session else False
+        
+        
         
 
 

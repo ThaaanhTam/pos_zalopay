@@ -260,7 +260,7 @@ class ZaloPayController(http.Controller):
     )
     def zalopay_callback(self, **post):
         """Xử lý callback từ ZaloPay."""
-        
+        result = {}
         logging.info("xử lý callbackkkkkkkkkkkkkkkkkkkkkkkkkkkk")
 
         aa = request.httprequest.get_data()
@@ -283,38 +283,41 @@ class ZaloPayController(http.Controller):
             mac = hmac.new(zalopay.key2.encode(), data['data'].encode(), hashlib.sha256).hexdigest()
 
             if mac != data['mac']:
-                raise Forbidden(_("Nhận dữ liệu với chữ ký không hợp lệ."))
+                _logger.info("Không nhận được dữ liệu JSON từ ZaloPay")
+                result['return_code'] = -1
+                result['return_message'] = 'mac not equal'
 
-            # Nếu MAC hợp lệ, trả về thành công
-            _logger.info("MAC hợp lệ. Callback xử lý thành công.")
-            tx_sudo = (
-                request.env["pos.order"]
-                .sudo()
-                .search([('app_trans_id', '=', data['app_trans_id'])], limit=1)
-            )
+            else:
+                dataJson = json.loads(data['data'])
+                app_trans_id = dataJson['app_trans_id']
+                _logger.info("Cập nhật trạng thái đơn hàng = success cho app_trans_id = %s", app_trans_id)
+            
+                tx_sudo = (
+                    request.env["pos.order"]
+                    .sudo()
+                    .search([('app_trans_id', '=', app_trans_id)], limit=1)
+                )
+
             
             # Xử lý thanh toán thành công
-            if data.get("status") == 1:  # Giả sử 1 là thành công
+            if  tx_sudo:
                 _logger.info("Thanh toán đã được lưu thành công.")
                 tx_sudo._set_done()
                 tx_sudo._process_pos_online_payment()
-                return json.dumps({"return_code": 1, "return_message": "Đặt hàng thành công."})
-
+                result['return_code'] = -1
+                result['return_message'] = 'mac not equal'
             else:
-                _logger.warning("Mã phản hồi không hợp lệ: %s", data.get("status"))
-                return json.dumps({"return_code": 2, "return_message": f"Nhận dữ liệu với mã lỗi: {data.get('status')}"})
-
-        except Forbidden:
-            _logger.warning("Lỗi xác thực trong quá trình xử lý thông báo.")
-            return json.dumps({"return_code": 2, "return_message": "Sai thông tin xác thực."})
-
-        except ValidationError as e:
-            _logger.warning("Lỗi xác thực trong quá trình xử lý thông báo: %s", e)
-            return json.dumps({"return_code": 2, "return_message": str(e)})
+                _logger.warning("Không tìm thấy giao dịch với app_trans_id = %s", app_trans_id)
+                result['return_code'] = -1
+                result['return_message'] = 'Transaction not found'
 
         except Exception as e:
-            _logger.error("Lỗi xử lý dữ liệu callback: %s", e)
-            return json.dumps({"return_code": 2, "return_message": "Lỗi hệ thống khi xử lý thông tin."})
+            _logger.error("Xử lý callback ZaloPay thất bại: %s", e)
+            result['return_code'] = 0  # ZaloPay server sẽ callback lại (tối đa 3 lần)
+            result['return_message'] = str(e)
+        _logger.info("Kết thúc xử lý callback ZaloPay với kết quả: %s", result)
+        # Thông báo kết quả cho ZaloPay server
+        return result
 
 
 

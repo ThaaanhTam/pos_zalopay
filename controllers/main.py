@@ -237,9 +237,9 @@ class ZaloPayController(http.Controller):
             
     @http.route(
         _callback_url,
-        type="http",
+        type="json",
         auth="public",
-        methods=["POST"],
+        methods=["POST","GET"],
         csrf=False,
     )
     def zalopay_callback(self, **post):

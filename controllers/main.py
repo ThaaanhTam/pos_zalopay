@@ -10,6 +10,7 @@ from io import BytesIO
 from datetime import datetime
 import base64
 import qrcode
+from werkzeug import urls
 from werkzeug.urls import url_encode
 from werkzeug.exceptions import Forbidden
 
@@ -65,7 +66,7 @@ class ZaloPayController(http.Controller):
                 "amount": amount,  # Example amount in VND
                 "description": "Payment for order",
                 "bank_code": "zalopayapp",
-                "callback_url": request.httprequest.url_root + '/pos/zalopay/callback',
+                "callback_url": urls.url_join(zalopay.get_base_url, '/pos/zalopay/callback'),
 
             }
 

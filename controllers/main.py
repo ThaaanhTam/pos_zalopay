@@ -127,13 +127,9 @@ class ZaloPayController(http.Controller):
                             "data:image/png;base64," + base64.b64encode(img_bytes).decode()
                         )
                         _logger.info("Tạo thành cônggggggg")
-                        order = http.request.env['pos.order'].sudo().create({
-                            'app_trans_id': app_trans_id,
-                            'amount_total': amount,
-                            'session_id': self._get_current_session_id(),
-                        # Thêm các trường khác cần thiết cho đơn hàng
-                        # 'other_field': data.get("other_field"),
-                    })
+                        http.request.env['pos.order'].sudo().write({'app_trans_id': data["app_trans_id"]})
+                        _logger.info("Đã lưu app_trans_id: %s vào đơn hàng với ID: %s", data["app_trans_id"], pos_order.id)
+
                     
                     _logger.info("Đã tạo đơn hàng mới với mã giao dịch: %s", app_trans_id)
                     

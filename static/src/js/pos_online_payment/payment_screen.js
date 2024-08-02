@@ -100,18 +100,7 @@ patch(PaymentScreen.prototype, {
             
           }
         );
-        if (qrCodeData.return_code === '1') {
-          if (qrCodeData.return_message === 'success') {
-            console.log("thành công 22222222222222222222  "); // Ghi log để xác nhận
-
-            
-          } else {
-            console.log("thành công 111111111111111111111111111  "); // Ghi log để xác nhận
-
-          }
-        } else {
-          console.log("thất bạiiiiiiiiiiiiiiiiiiiiiiiii  ");
-        }
+        
 
         // Check if the order is already paid by another online payment or not receive the QR code
         if (!lastOrderServerOPData || !qrCodeData) {

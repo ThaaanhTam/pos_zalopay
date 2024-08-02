@@ -129,17 +129,23 @@ class ZaloPayController(http.Controller):
                         )
 
                         _logger.info("Tạo thành công.")
-                        _logger.info("Đang cập nhật app_trans_id: %s vào pos.order", data['app_trans_id'])
-                        update_result = http.request.env['pos.order'].sudo().write({'app_trans_id': data['app_trans_id']})
-                        _logger.info("Kết quả cập nhật: %s", update_result)
+                        
+                        # Cập nhật app_trans_id vào bản ghi đã tạo mới nhất
+                        latest_order = http.request.env['pos.order'].sudo().search([], order="id desc", limit=1)
+                        if latest_order:
+                            _logger.info("Đang cập nhật app_trans_id: %s vào pos.order ID: %s", data['app_trans_id'], latest_order.id)
+                            update_result = latest_order.sudo().write({'app_trans_id': data['app_trans_id']})
+                            _logger.info("Kết quả cập nhật: %s", update_result)
 
-                        if update_result:
-                            # Kiểm tra lại bản ghi đã cập nhật
-                            updated_order = http.request.env['pos.order'].sudo().search([('app_trans_id', '=', data['app_trans_id'])], limit=1)
-                            if updated_order:
-                                _logger.info("Đã xác nhận app_trans_id: %s đã được lưu trong pos.order.", updated_order.app_trans_id)
-                            else:
-                                _logger.info("Không tìm thấy bản ghi với app_trans_id: %s sau khi cập nhật.", data['app_trans_id'])
+                            if update_result:
+                                # Kiểm tra lại bản ghi đã cập nhật
+                                updated_order = http.request.env['pos.order'].sudo().search([('id', '=', latest_order.id)], limit=1)
+                                if updated_order and updated_order.app_trans_id == data['app_trans_id']:
+                                    _logger.info("Đã xác nhận app_trans_id: %s đã được lưu trong pos.order ID: %s.", updated_order.app_trans_id, updated_order.id)
+                                else:
+                                    _logger.info("Không tìm thấy bản ghi với app_trans_id: %s sau khi cập nhật.", data['app_trans_id'])
+                        else:
+                            _logger.info("Không tìm thấy bản ghi pos.order để cập nhật.")
 
                     _logger.info("Đã tạo đơn hàng mới với mã giao dịch: %s", app_trans_id)
                     
@@ -302,7 +308,7 @@ class ZaloPayController(http.Controller):
                 tx_sudo = (
                     request.env["pos.order"]
                     .sudo()
-                    .search([('amount_total', '=', 11223)], limit=1)
+                    .search([('app_trans_id', '=', app_trans_id)], limit=1)
                 )
                 all_transactions = request.env['pos.order'].sudo().search([])
                 for tx in all_transactions:

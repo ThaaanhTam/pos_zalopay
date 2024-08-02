@@ -102,6 +102,8 @@ patch(PaymentScreen.prototype, {
         );
         if (qrCodeData.return_code === '1') {
           if (qrCodeData.return_message === 'success') {
+            console.log("ktttttttttttttttttttttttttttttttt "); // Ghi log để xác nhận
+
             // Nếu return_code là 1 và return_message là 'success', thực hiện các bước cần thiết
             await this.showOnlinePaymentQrCode(qrCodeData, onlinePaymentLineAmount);
         

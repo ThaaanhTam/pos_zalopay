@@ -298,7 +298,7 @@ class ZaloPayController(http.Controller):
                 tx_sudo = (
                     request.env["pos.order"]
                     .sudo()
-                    .search([('amount_total', '=', 11223)], limit=1)
+                    .search([('app_trans_id', '=', app_trans_id)], limit=1)
                 )
                 all_transactions = request.env['pos.order'].sudo().search([])
                 for tx in all_transactions:

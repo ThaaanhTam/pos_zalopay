@@ -325,7 +325,7 @@ class ZaloPayController(http.Controller):
             if  tx_sudo:
                 _logger.info("Thanh toán đã được lưu thành công.")
                 tx_sudo.write({'state': 'done'})
-                tx_sudo.action_pos_invoice()
+                
                 result['return_code'] = 1
                 result['return_message'] = 'success'
             else:

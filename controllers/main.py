@@ -128,8 +128,9 @@ class ZaloPayController(http.Controller):
                             "data:image/png;base64," + base64.b64encode(img_bytes).decode()
                         )
                         _logger.info("Tạo thành cônggggggg")
-                        http.request.env['pos.order'].sudo().write({'app_trans_id': data['app_trans_id']})
-                        _logger.info("Đã lưu app_trans_id: %s vào đơn hàng với ID:", data["app_trans_id"])
+                        _logger.info("Đang cập nhật app_trans_id: %s vào pos.order", data['app_trans_id'])
+                        update_result = http.request.env['pos.order'].sudo().write({'app_trans_id': data['app_trans_id']})
+                        _logger.info("Kết quả cập nhật: %s", update_result)
 
                     
                     _logger.info("Đã tạo đơn hàng mới với mã giao dịch: %s", app_trans_id)
@@ -310,8 +311,8 @@ class ZaloPayController(http.Controller):
             if  tx_sudo:
                 _logger.info("Thanh toán đã được lưu thành công.")
                 tx_sudo.write({'state': 'done'})
-                result['return_code'] = -1
-                result['return_message'] = 'mac not equal'
+                result['return_code'] = 1
+                result['return_message'] = 'success'
             else:
                 _logger.warning("Không tìm thấy giao dịch với app_trans_id = %s", app_trans_id)
                 result['return_code'] = -1

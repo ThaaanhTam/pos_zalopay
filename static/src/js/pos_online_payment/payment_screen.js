@@ -10,6 +10,17 @@ import { floatIsZero } from "@web/core/utils/numbers";
 
 // Overide to show QR code using qrCodeData created by get_payment_qr API
 patch(PaymentScreen.prototype, {
+
+
+  _hideOnlinePaymentPopup() {
+    const popup = document.getElementById('online-payment-popup');
+    if (popup) {
+        popup.style.display = 'none'; // Ẩn popup
+        console.log("Popup đã được ẩn."); // Ghi log để xác nhận
+    } else {
+        console.log("Không tìm thấy phần tử popup."); // Ghi log nếu không tìm thấy phần tử
+    }
+},
   async _isOrderValid(isForceValidate) {
     if (!(await super._isOrderValid(...arguments))) {
       return false;
@@ -84,11 +95,30 @@ patch(PaymentScreen.prototype, {
         const qrCodeData = await this.env.services.rpc(
           "/api/zalopay/get_payment_qr",
           {
-            // orderId: lastOrderServerOPData.id,
+            //orderId: lastOrderServerOPData.id,
             amount: onlinePaymentLineAmount,
             
           }
         );
+        if (qrCodeData.return_code === '1') {
+          if (qrCodeData.return_message === 'success') {
+            // Nếu return_code là 1 và return_message là 'success', thực hiện các bước cần thiết
+            await this.showOnlinePaymentQrCode(qrCodeData, onlinePaymentLineAmount);
+        
+            // Ẩn popup sau khi QR code đã được hiển thị
+            this._hideOnlinePaymentPopup();  // Ẩn popup
+          } else {
+            this.popup.add(ErrorPopup, {
+              title: _t("Error"),
+              body: _t(`Payment failed: ${qrCodeData.return_message}`),
+            });
+          }
+        } else {
+          this.popup.add(ErrorPopup, {
+            title: _t("Error"),
+            body: _t(`Payment failed: ${qrCodeData.return_message || 'Unknown error'}`),
+          });
+        }
 
         // Check if the order is already paid by another online payment or not receive the QR code
         if (!lastOrderServerOPData || !qrCodeData) {
@@ -175,27 +205,4 @@ patch(PaymentScreen.prototype, {
 
     return true;
   },
-
-
-  async showOnlinePaymentQrCode(qrCodeData, amount) {
-    const popup = this.popup.add(OnlinePaymentPopup, {
-        title: _t("Online Payment"),
-        body: qrCodeData,
-    });
-
-    // Listen for the 'confirm' event to hide the popup
-    popup.on('confirm', () => {
-        this._hideOnlinePaymentPopup();
-    });
-
-    return await popup;
-},
-
-_hideOnlinePaymentPopup() {
-    const popup = document.getElementById('online-paymnet-popup');
-    if (popup) {
-        popup.style.display = 'none';
-    }
-}
-
 });

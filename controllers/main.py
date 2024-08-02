@@ -225,7 +225,6 @@ class ZaloPayController(http.Controller):
                 
                 result['return_code'] = 1
                 result['return_message'] = 'success'
-                result['hide_qr'] = True
             else:
                 _logger.warning("Không tìm thấy giao dịch với app_trans_id = %s", app_trans_id)
                 result['return_code'] = -1

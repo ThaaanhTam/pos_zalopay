@@ -27,6 +27,76 @@ class ZaloPayController(http.Controller):
     _create_qr_url = "/api/zalopay/get_payment_qr"
     _callback_url = "/pos/zalopay/callback"
 
+
+
+
+
+    def create_new_transaction(self, pos_order_sudo, zalopay, order_amount):
+        """Create a new transaction with POS ZaloPay payment method.
+        Args:
+            pos_order_sudo: pos.order record in sudo mode
+            zalopay: payment.provider zalopay record
+            order_amount: The amount of the order
+        Raises:
+            AssertionError: If the currency is invalid
+        Returns:
+            tx_sudo: The created transaction record in sudo mode
+        """
+
+        # Get the access token of the POS order
+        access_token = pos_order_sudo.access_token
+
+        # Get the ZaloPay QR payment method
+        zalopay_qr_method = (
+            request.env["payment.method"]
+            .sudo()
+            .search([("code", "=", "zalopayqr")], limit=1)
+        )
+
+        # Get the user and partner of the user
+        user_sudo = request.env.user
+        partner_sudo = pos_order_sudo.partner_id or self._get_partner_sudo(user_sudo)
+
+        # Create transaction data
+        prefix_kwargs = {
+            "pos_order_id": pos_order_sudo.id,
+        }
+        transaction_data = {
+            "provider_id": zalopay.id,
+            "payment_method_id": zalopay_qr_method.id,
+            "partner_id": partner_sudo.id,
+            "partner_phone": partner_sudo.phone,
+            "token_id": None,
+            "amount": int(order_amount),
+            "flow": "direct",
+            "tokenization_requested": False,
+            "landing_route": "",
+            "is_validation": False,
+            "access_token": access_token,
+            "reference_prefix": request.env["payment.transaction"]
+            .sudo()
+            ._compute_reference_prefix(
+                provider_code="zalopay", separator="-", **prefix_kwargs
+            ),
+            "custom_create_values": {
+                "pos_order_id": pos_order_sudo.id,
+                "tokenize": False,
+            },
+        }
+
+        # Check if the currency is valid
+        currency = pos_order_sudo.currency_id
+        if not currency.active:
+            raise AssertionError(_("The currency is invalid."))
+        # Ignore the currency provided by the customer
+        transaction_data["currency_id"] = currency.id
+
+        # Create a new transaction
+        tx_sudo = self._create_transaction(**transaction_data)
+
+        return tx_sudo
+
+
     @http.route(
             _create_qr_url,
             type='json',
@@ -159,110 +229,7 @@ class ZaloPayController(http.Controller):
         # Ví dụ: Lấy session_id của phiên POS đang mở
         session = http.request.env['pos.session'].sudo().search([('state', '=', 'opened')], limit=1)
         return session.id if session else False
-        
-        
-        
-
-
-
-
-    # @http.route(_callback_url, type='http', auth='public', methods=['POST'], csrf=False)
-    # def zalopay_callback(self, **post):
-    #     """Handle the callback request from ZaloPay."""
-    #     _logger.info(" ZaloPay callbackkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk")
-
-    #     # Get the data from the request
-    #     data = request.get_json_data()  
-    #     _logger.info("Callback data: %s", data)
-
-    #     try:
-    #         # Get the POS order with the app_trans_id
-    #         pos_order_sudo = (
-    #             request.env["pos.order"]
-    #             .sudo()
-    #             .search([("id", "=", data.get("app_trans_id"))], limit=1)
-    #         )
-
-    #         # Check if the order exists
-    #         if not pos_order_sudo:
-    #             raise ValidationError(_("Không tìm thấy giao dịch phù hợp với mã tham chiếu."))
-
-    #         # Check if the order has been paid
-    #         if pos_order_sudo.state in ("paid", "done", "invoiced"):
-    #             _logger.info("Đơn hàng đã được thanh toán. Đang hủy bỏ.")
-    #             return json.dumps({"return_code": 2, "return_message": "Đơn hàng đã được thanh toán."})
-
-    #         # Get the ZaloPay provider
-    #         zalopay = (
-    #             request.env["payment.provider"]
-    #             .sudo()
-    #             .search([("code", "=", "zalopay")], limit=1)
-    #         )
-
-    #         # Verify the callback data
-    #         data_string = f"{data['app_id']}|{data['app_trans_id']}|{data['app_user']}|{data['amount']}|{data['app_time']}|{data['embed_data']}|{data['item']}"
-    #         mac = hmac.new(zalopay.key2.encode(), data_string.encode(), hashlib.sha256).hexdigest()
-
-    #         if mac != data['mac']:
-    #             raise Forbidden(_("Nhận dữ liệu với chữ ký không hợp lệ."))
-
-    #         # Validate the amount
-    #         order_amount = pos_order_sudo._get_checked_next_online_payment_amount()
-    #         receive_amount = data.get("amount")
-    #         if int(receive_amount) != int(order_amount):
-    #             raise AssertionError(_("Số tiền không khớp."))
-
-    #         # Create a new transaction
-    #         tx_sudo = self.create_new_transaction(pos_order_sudo, zalopay, order_amount)
-
-    #         # Update the transaction "provider_reference" with the zp_trans_id
-    #         tx_sudo.provider_reference = data.get("zp_trans_id")
-
-    #         # Check the response code and process the payment
-    #         if data.get("status") == 1:  # Assuming 1 means successful payment
-    #             _logger.info("Thanh toán được xử lý thành công. Đang lưu.")
-
-    #             # Set the transaction as done and process the payment
-    #             tx_sudo._set_done()
-    #             tx_sudo._process_pos_online_payment()
-    #             _logger.info("Thanh toán đã được lưu thành công.")
-    #             return json.dumps({"return_code": 1, "return_message": "Đặt hàng thành công."})
-    #         else:
-    #             _logger.warning(
-    #                 "Nhận dữ liệu với mã phản hồi không hợp lệ: %s. Đặt trạng thái giao dịch thanh toán thành Lỗi.",
-    #                 data.get("status"),
-    #             )
-    #             tx_sudo._set_error(
-    #                 "ZaloPay: "
-    #                 + _("Nhận dữ liệu với mã phản hồi không hợp lệ: %s", data.get("status"))
-    #             )
-    #             return json.dumps({"return_code": 2, "return_message": f"Nhận dữ liệu với mã lỗi là: {data.get('status')}"})
-
-    #     except Forbidden:
-    #         _logger.warning(
-    #             "Lỗi cấm trong quá trình xử lý thông báo. Đang hủy bỏ.",
-    #             exc_info=True,
-    #         )
-    #         return json.dumps({"return_code": 2, "return_message": "Sai thông tin xác thực."})
-
-    #     except AssertionError:
-    #         _logger.warning(
-    #             "Lỗi khẳng định trong quá trình xử lý thông báo. Đang hủy bỏ.",
-    #             exc_info=True,
-    #         )
-    #         return json.dumps({"return_code": 2, "return_message": "Số tiền không chính xác.", "data": {"amount": f"{int(order_amount)}"}})
-
-    #     except ValidationError:
-    #         _logger.warning(
-    #             "Lỗi xác thực trong quá trình xử lý thông báo. Đang hủy bỏ.",
-    #             exc_info=True,
-    #         )
-    #         return json.dumps({"return_code": 2, "return_message": "Không tìm thấy Mã đơn hàng trong hệ thống.", "data": {"app_trans_id": data.get("app_trans_id")}})
-
-    #     except Exception as e:
-    #         _logger.error(f"Lỗi xử lý dữ liệu callback: {e}")
-    #         return json.dumps({"return_code": 2, "return_message": f"Lỗi hệ thống khi xử lý thông tin: {e}"})
-            
+              
     @http.route(
         _callback_url,
         type="json",
@@ -290,6 +257,12 @@ class ZaloPayController(http.Controller):
                 .search([("code", "=", "zalopay")], limit=1)
             )
 
+            pos_order_sudo = (
+                request.env["pos.order"]
+                    .sudo()
+                    .search([('app_trans_id', '=', app_trans_id)], limit=1)
+            )
+
             # Verify the callback data
             # data_string = f"{data['app_id']}|{data['app_trans_id']}|{data['app_user']}|{data['amount']}|{data['app_time']}|{data['embed_data']}|{data['item']}"
             mac = hmac.new(zalopay.key2.encode(), data['data'].encode(), hashlib.sha256).hexdigest()
@@ -303,13 +276,17 @@ class ZaloPayController(http.Controller):
                 dataJson = json.loads(data['data'])
                 app_trans_id = dataJson['app_trans_id']
                 _logger.info("Cập nhật trạng thái đơn hàng = success cho app_trans_id = %s", app_trans_id)
-               
+                order_amount = pos_order_sudo._get_checked_next_online_payment_amount()
+                receive_amount = data.get("amount")
+                if int(receive_amount) != int(order_amount):
+                    raise AssertionError(_("Số tiền không khớp."))
+                tx_sudo = self.create_new_transaction(pos_order_sudo, zalopay, order_amount)
 
-                tx_sudo = (
-                    request.env["pos.order"]
-                    .sudo()
-                    .search([('app_trans_id', '=', app_trans_id)], limit=1)
-                )
+                # tx_sudo = (
+                #     request.env["pos.order"]
+                #     .sudo()
+                #     .search([('app_trans_id', '=', app_trans_id)], limit=1)
+                # )
                 all_transactions = request.env['pos.order'].sudo().search([])
                 for tx in all_transactions:
                     _logger.info("Giao dịch hiện có: %s với app_trans_id: %s", tx.id, tx.app_trans_id)
@@ -320,8 +297,8 @@ class ZaloPayController(http.Controller):
             # Xử lý thanh toán thành công
             if  tx_sudo:
                 _logger.info("Thanh toán đã được lưu thành công.")
-                tx_sudo._set_done()
-                tx_sudo._process_pos_online_payment()
+                tx_sudo.write({'state': 'done'})
+                tx_sudo.action_pos_invoice()
                 result['return_code'] = 1
                 result['return_message'] = 'success'
             else:

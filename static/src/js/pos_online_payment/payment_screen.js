@@ -175,4 +175,27 @@ patch(PaymentScreen.prototype, {
 
     return true;
   },
+
+
+  async showOnlinePaymentQrCode(qrCodeData, amount) {
+    const popup = this.popup.add(OnlinePaymentPopup, {
+        title: _t("Online Payment"),
+        body: qrCodeData,
+    });
+
+    // Listen for the 'confirm' event to hide the popup
+    popup.on('confirm', () => {
+        this._hideOnlinePaymentPopup();
+    });
+
+    return await popup;
+},
+
+_hideOnlinePaymentPopup() {
+    const popup = document.getElementById('online-paymnet-popup');
+    if (popup) {
+        popup.style.display = 'none';
+    }
+}
+
 });

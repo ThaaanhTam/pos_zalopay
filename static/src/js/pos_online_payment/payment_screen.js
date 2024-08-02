@@ -102,24 +102,15 @@ patch(PaymentScreen.prototype, {
         );
         if (qrCodeData.return_code === '1') {
           if (qrCodeData.return_message === 'success') {
-            console.log("ktttttttttttttttttttttttttttttttt "); // Ghi log để xác nhận
+            console.log("thành công 22222222222222222222  "); // Ghi log để xác nhận
 
-            // Nếu return_code là 1 và return_message là 'success', thực hiện các bước cần thiết
-            await this.showOnlinePaymentQrCode(qrCodeData, onlinePaymentLineAmount);
-        
-            // Ẩn popup sau khi QR code đã được hiển thị
-            this._hideOnlinePaymentPopup();  // Ẩn popup
+            
           } else {
-            this.popup.add(ErrorPopup, {
-              title: _t("Error"),
-              body: _t(`Payment failed: ${qrCodeData.return_message}`),
-            });
+            console.log("thành công 111111111111111111111111111  "); // Ghi log để xác nhận
+
           }
         } else {
-          this.popup.add(ErrorPopup, {
-            title: _t("Error"),
-            body: _t(`Payment failed: ${qrCodeData.return_message || 'Unknown error'}`),
-          });
+          console.log("thất bạiiiiiiiiiiiiiiiiiiiiiiiii  ");
         }
 
         // Check if the order is already paid by another online payment or not receive the QR code

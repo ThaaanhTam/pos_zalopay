@@ -15,12 +15,12 @@ patch(PaymentScreen.prototype, {
   _hideOnlinePaymentPopup() {
     const popup = document.getElementById('online-payment-popup');
     if (popup) {
-        popup.style.display = 'none'; // Ẩn popup
-        console.log("Popup đã được ẩn."); // Ghi log để xác nhận
+      popup.style.display = 'none'; // Ẩn popup
+      console.log("Popup đã được ẩn."); // Ghi log để xác nhận
     } else {
-        console.log("Không tìm thấy phần tử popup."); // Ghi log nếu không tìm thấy phần tử
+      console.log("Không tìm thấy phần tử popup."); // Ghi log nếu không tìm thấy phần tử
     }
-},
+  },
   async _isOrderValid(isForceValidate) {
     if (!(await super._isOrderValid(...arguments))) {
       return false;
@@ -99,7 +99,15 @@ patch(PaymentScreen.prototype, {
             amount: onlinePaymentLineAmount,
             
           }
+
+          
         );
+        if (qrCodeData.return_code === '1' && qrCodeData.return_message === 'success') {
+          // Nếu phản hồi thành công và yêu cầu ẩn popup
+          if (qrCodeData.hide_popup) {
+            this._hideOnlinePaymentPopup(); // Gọi hàm để ẩn popup
+          }
+        }
         
 
         // Check if the order is already paid by another online payment or not receive the QR code

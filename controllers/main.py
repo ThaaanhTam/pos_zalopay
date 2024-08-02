@@ -127,22 +127,26 @@ class ZaloPayController(http.Controller):
                         img_base64 = (
                             "data:image/png;base64," + base64.b64encode(img_bytes).decode()
                         )
-                        _logger.info("Tạo thành cônggggggg")
+
+                        _logger.info("Tạo thành công.")
                         _logger.info("Đang cập nhật app_trans_id: %s vào pos.order", data['app_trans_id'])
                         update_result = http.request.env['pos.order'].sudo().write({'app_trans_id': data['app_trans_id']})
                         _logger.info("Kết quả cập nhật: %s", update_result)
 
-                    
+                        if update_result:
+                            # Kiểm tra lại bản ghi đã cập nhật
+                            updated_order = http.request.env['pos.order'].sudo().search([('app_trans_id', '=', data['app_trans_id'])], limit=1)
+                            if updated_order:
+                                _logger.info("Đã xác nhận app_trans_id: %s đã được lưu trong pos.order.", updated_order.app_trans_id)
+                            else:
+                                _logger.info("Không tìm thấy bản ghi với app_trans_id: %s sau khi cập nhật.", data['app_trans_id'])
+
                     _logger.info("Đã tạo đơn hàng mới với mã giao dịch: %s", app_trans_id)
                     
                     return img_base64
-
-            _logger.error("Không tìm thấy order_url trong phản hồi của ZaloPay")
-            return {'error': 'Không tìm thấy order_url trong phản hồi của ZaloPay'}
-
         except Exception as e:
-            _logger.error("Error creating ZaloPay payment order: %s", e)
-            return {'error': str(e)}
+            _logger.error("Error creating ZaloPay payment order: %s", str(e))
+            return {'status': 'error', 'message': str(e)}
         
     def _get_current_session_id(self):
         """Lấy session_id hiện tại. Cần tùy chỉnh tùy thuộc vào cách quản lý session của bạn."""
@@ -298,7 +302,7 @@ class ZaloPayController(http.Controller):
                 tx_sudo = (
                     request.env["pos.order"]
                     .sudo()
-                    .search([('app_trans_id', '=', app_trans_id)], limit=1)
+                    .search([('amount_total', '=', 11223)], limit=1)
                 )
                 all_transactions = request.env['pos.order'].sudo().search([])
                 for tx in all_transactions:

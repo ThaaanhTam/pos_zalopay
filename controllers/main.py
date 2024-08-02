@@ -256,7 +256,9 @@ class ZaloPayController(http.Controller):
                 .sudo()
                 .search([("code", "=", "zalopay")], limit=1)
             )
-
+            dataJson = json.loads(data['data'])
+            app_trans_id = dataJson['app_trans_id']
+            _logger.info("Cập nhật trạng thái đơn hàng = success cho app_trans_id = %s", app_trans_id)
             pos_order_sudo = (
                 request.env["pos.order"]
                     .sudo()
@@ -273,15 +275,18 @@ class ZaloPayController(http.Controller):
                 result['return_message'] = 'mac not equal'
 
             else:
-                dataJson = json.loads(data['data'])
-                app_trans_id = dataJson['app_trans_id']
-                _logger.info("Cập nhật trạng thái đơn hàng = success cho app_trans_id = %s", app_trans_id)
+                
                 order_amount = pos_order_sudo._get_checked_next_online_payment_amount()
                 receive_amount = data.get("amount")
                 if int(receive_amount) != int(order_amount):
                     raise AssertionError(_("Số tiền không khớp."))
                 tx_sudo = self.create_new_transaction(pos_order_sudo, zalopay, order_amount)
-
+                
+                # pos_order_sudo = (
+                # request.env["pos.order"]
+                #     .sudo()
+                #     .search([('app_trans_id', '=', app_trans_id)], limit=1)
+            # )
                 # tx_sudo = (
                 #     request.env["pos.order"]
                 #     .sudo()

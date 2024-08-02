@@ -276,9 +276,14 @@ class ZaloPayController(http.Controller):
 
             else:
                 
+                amount = data.get("amount")
+                if amount is None:
+                    raise ValueError("amount is missing from callback data")
+
+                # Check if receive_amount is valid
+                receive_amount = int(amount)  # Convert amount to integer
                 order_amount = pos_order_sudo._get_checked_next_online_payment_amount()
-                receive_amount = data.get("amount")
-                if int(receive_amount) != int(order_amount):
+                if receive_amount != int(order_amount):
                     raise AssertionError(_("Số tiền không khớp."))
                 tx_sudo = self.create_new_transaction(pos_order_sudo, zalopay, order_amount)
                 

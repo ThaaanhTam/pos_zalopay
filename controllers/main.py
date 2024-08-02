@@ -55,7 +55,6 @@ class ZaloPayController(http.Controller):
 
         # Get the user and partner of the user
         user_sudo = request.env.user
-        partner_sudo = pos_order_sudo.partner_id or self._get_partner_sudo(user_sudo)
 
         # Create transaction data
         prefix_kwargs = {
@@ -64,10 +63,7 @@ class ZaloPayController(http.Controller):
         transaction_data = {
             "provider_id": zalopay.id,
             "payment_method_id": zalopay_qr_method.id,
-            "partner_id": partner_sudo.id,
-            "partner_phone": partner_sudo.phone,
             "token_id": None,
-            "amount": int(order_amount),
             "flow": "direct",
             "tokenization_requested": False,
             "landing_route": "",

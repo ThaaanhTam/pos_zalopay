@@ -90,7 +90,7 @@
               });
               return false;
             }
-            if (qrCodeData.return_code === 1 && qrCodeData.return_message === 'success') {
+            if (a.return_code === 1 && a.return_message === 'success') {
               // Ẩn popup QR Code nếu điều kiện đúng
               console.log("lấy được")
               this.hideOnlinePaymentPopup(); // Gọi phương thức ẩn popup

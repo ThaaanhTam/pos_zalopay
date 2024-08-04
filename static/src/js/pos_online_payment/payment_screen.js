@@ -10,24 +10,6 @@ import { floatIsZero } from "@web/core/utils/numbers";
 
 // Overide to show QR code using qrCodeData created by get_payment_qr API
 patch(PaymentScreen.prototype, {
-
-
-
-  _hideQRCode() {
-    // Tìm phần tử chứa QR code và ẩn nó
-    const qrCodeElement = document.querySelector('.qr-code-container');
-    if (qrCodeElement) {
-      qrCodeElement.style.display = 'none';
-    }
-    
-    // Hoặc, nếu bạn đang sử dụng một popup để hiển thị QR code:
-    this.popup.close();
-  },
-
-  // ... tiếp tục với phần code còn lại ...
-
-
- 
   async _isOrderValid(isForceValidate) {
     if (!(await super._isOrderValid(...arguments))) {
       return false;
@@ -44,11 +26,6 @@ patch(PaymentScreen.prototype, {
 
     const onlinePaymentLines = this.getRemainingOnlinePaymentLines();
     if (onlinePaymentLines.length > 0) {
-      // Send the order to the server everytime before the online payments process to
-      // allow the server to get the data for online payments and link the successful
-      // online payments to the order.
-      // The validation process will be done by the server directly after a successful
-      // online payment that makes the order fully paid.
       this.currentOrder.date_order = luxon.DateTime.now();
       this.currentOrder.save_to_db();
       this.pos.addOrderToUpdateSet();
@@ -56,16 +33,11 @@ patch(PaymentScreen.prototype, {
       try {
         await this.pos.sendDraftToServer();
       } catch (error) {
-        // Code from _finalizeValidation():
         if (error.code == 700 || error.code == 701) {
           this.error = true;
         }
 
         if ("code" in error) {
-          // We started putting `code` in the rejected object for invoicing error.
-          // We can continue with that convention such that when the error has `code`,
-          // then it is an error when invoicing. Besides, _handlePushOrderError was
-          // introduce to handle invoicing error logic.
           await this._handlePushOrderError(error);
         }
         this.showSaveOrderOnServerErrorPopup();
@@ -90,7 +62,6 @@ patch(PaymentScreen.prototype, {
       let lastOrderServerOPData = null;
       for (const onlinePaymentLine of onlinePaymentLines) {
         const onlinePaymentLineAmount = onlinePaymentLine.get_amount();
-        // The local state is not aware if the online payment has already been done.
 
         lastOrderServerOPData =
           await this.currentOrder.update_online_payments_data_with_server(
@@ -98,25 +69,13 @@ patch(PaymentScreen.prototype, {
             onlinePaymentLineAmount
           );
 
-        /* Overide to create QR code by calling get_payment_qr API */
         const qrCodeData = await this.env.services.rpc(
           "/api/zalopay/get_payment_qr",
           {
-            //orderId: lastOrderServerOPData.id,
             amount: onlinePaymentLineAmount,
-            
           }
-
-          
         );
-        if (qrCodeData && qrCodeData.hide_qr_code) {
-          // Gọi hàm để ẩn QR code
-          this._hideQRCode();
-        }
-        
-        
 
-        // Check if the order is already paid by another online payment or not receive the QR code
         if (!lastOrderServerOPData || !qrCodeData) {
           this.popup.add(ErrorPopup, {
             title: _t("Online payment unavailable"),
@@ -147,7 +106,6 @@ patch(PaymentScreen.prototype, {
           onlinePaymentLine.set_payment_status("waiting");
           this.currentOrder.select_paymentline(onlinePaymentLine);
 
-          /* Overide to show QR code uing qrCodeData created by get_payment_qr API */
           lastOrderServerOPData = await this.showOnlinePaymentQrCode( 
             qrCodeData,
             onlinePaymentLineAmount
@@ -171,7 +129,11 @@ patch(PaymentScreen.prototype, {
       }
 
       await this.afterPaidOrderSavedOnServer(lastOrderServerOPData.paid_order);
-      return false; // Cancel normal flow because the current order is already saved on the server.
+
+      // Gọi hàm ẩn QR code popup
+      this._hideQRCodePopup();
+
+      return false;
     } else if (this.currentOrder.server_id) {
       const orderServerOPData =
         await this.currentOrder.update_online_payments_data_with_server(
@@ -191,7 +153,11 @@ patch(PaymentScreen.prototype, {
       }
       if (orderServerOPData.is_paid) {
         await this.afterPaidOrderSavedOnServer(orderServerOPData.paid_order);
-        return false; // Cancel normal flow because the current order is already saved on the server.
+
+        // Gọi hàm ẩn QR code popup
+        this._hideQRCodePopup();
+
+        return false;
       }
       if (orderServerOPData.modified_payment_lines) {
         this.showModifiedOnlinePaymentsPopup();
@@ -201,4 +167,11 @@ patch(PaymentScreen.prototype, {
 
     return true;
   },
+
+  _hideQRCodePopup() {
+    const qrCodePopupElement = document.getElementById('online-payment-popup');
+    if (qrCodePopupElement) {
+      qrCodePopupElement.style.display = 'none';
+    }
+  }
 });

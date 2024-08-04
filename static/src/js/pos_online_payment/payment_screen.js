@@ -12,15 +12,22 @@ import { floatIsZero } from "@web/core/utils/numbers";
 patch(PaymentScreen.prototype, {
 
 
-  _hideOnlinePaymentPopup() {
-    const popup = document.getElementById('online-payment-popup');
-    if (popup) {
-      popup.style.display = 'none'; // Ẩn popup
-      console.log("Popup đã được ẩn."); // Ghi log để xác nhận
-    } else {
-      console.log("Không tìm thấy phần tử popup."); // Ghi log nếu không tìm thấy phần tử
+
+  _hideQRCode() {
+    // Tìm phần tử chứa QR code và ẩn nó
+    const qrCodeElement = document.querySelector('.qr-code-container');
+    if (qrCodeElement) {
+      qrCodeElement.style.display = 'none';
     }
+    
+    // Hoặc, nếu bạn đang sử dụng một popup để hiển thị QR code:
+    this.popup.close();
   },
+
+  // ... tiếp tục với phần code còn lại ...
+
+
+ 
   async _isOrderValid(isForceValidate) {
     if (!(await super._isOrderValid(...arguments))) {
       return false;
@@ -102,16 +109,11 @@ patch(PaymentScreen.prototype, {
 
           
         );
-        if (qrCodeData.return_code === '1' && qrCodeData.return_message === 'success') {
-          // Nếu phản hồi thành công và yêu cầu ẩn popup
-          if (qrCodeData.hide_popup) {
-            this._hideOnlinePaymentPopup(); // Gọi hàm để ẩn popup
-            console.log("đượcccccccccccccccccccccccccc ")
-          }
+        if (qrCodeData && qrCodeData.hide_qr_code) {
+          // Gọi hàm để ẩn QR code
+          this._hideQRCode();
         }
-        else{
-          console.log("không được ")
-        }
+        
         
 
         // Check if the order is already paid by another online payment or not receive the QR code
@@ -146,7 +148,7 @@ patch(PaymentScreen.prototype, {
           this.currentOrder.select_paymentline(onlinePaymentLine);
 
           /* Overide to show QR code uing qrCodeData created by get_payment_qr API */
-          lastOrderServerOPData = await this.showOnlinePaymentQrCode(
+          lastOrderServerOPData = await this.showOnlinePaymentQrCode( 
             qrCodeData,
             onlinePaymentLineAmount
           );

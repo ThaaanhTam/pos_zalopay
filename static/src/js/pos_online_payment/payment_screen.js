@@ -73,8 +73,11 @@ patch(PaymentScreen.prototype, {
           "/api/zalopay/get_payment_qr",
           {
             amount: onlinePaymentLineAmount,
-          }
+          },
+
+          console.log("áaaaaaaaaaaaaaaaaaaaasssssssssssssssssssssaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
         );
+
 
         if (!lastOrderServerOPData || !qrCodeData) {
           this.popup.add(ErrorPopup, {

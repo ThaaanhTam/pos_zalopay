@@ -10,7 +10,10 @@ import { floatIsZero } from "@web/core/utils/numbers";
 
 // Overide to show QR code using qrCodeData created by get_payment_qr API
 patch(PaymentScreen.prototype, {
+
   async _isOrderValid(isForceValidate) {
+   
+
     if (!(await super._isOrderValid(...arguments))) {
       return false;
     }
@@ -75,7 +78,6 @@ patch(PaymentScreen.prototype, {
             amount: onlinePaymentLineAmount,
           },
 
-          console.log("áaaaaaaaaaaaaaaaaaaaasssssssssssssssssssssaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
         );
 
 
@@ -111,7 +113,8 @@ patch(PaymentScreen.prototype, {
 
           lastOrderServerOPData = await this.showOnlinePaymentQrCode( 
             qrCodeData,
-            onlinePaymentLineAmount
+            onlinePaymentLineAmount,
+            console.log("aaaaaaaaaaaaaaaaasssssss")
           );
           if (onlinePaymentLine.get_payment_status() === "waiting") {
             onlinePaymentLine.set_payment_status(undefined);
@@ -172,9 +175,12 @@ patch(PaymentScreen.prototype, {
   },
 
   _hideQRCodePopup() {
+    console.log("Hàm _hideQRCodePopup được gọi");
     const qrCodePopupElement = document.getElementById('online-payment-popup');
     if (qrCodePopupElement) {
       qrCodePopupElement.style.display = 'none';
+      
+
     }
   }
 });

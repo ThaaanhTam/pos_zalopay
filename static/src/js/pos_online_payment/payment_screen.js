@@ -79,13 +79,7 @@
               },
 
             );
-            const a = await this.env.services.rpc(
-              "/pos/zalopay/callback",
             
-
-            );
-
-
             if (!lastOrderServerOPData || !qrCodeData) {
               this.popup.add(ErrorPopup, {
                 title: _t("Online payment unavailable"),
@@ -95,14 +89,7 @@
               });
               return false;
             }
-            if (a.return_code == 1) {
-              // Ẩn popup QR Code nếu điều kiện đúng
-              console.log("lấy được")
-              this.hideOnlinePaymentPopup(); // Gọi phương thức ẩn popup
-            } else {
-              console.log("không lấy được")           
 
-            
               if (!lastOrderServerOPData.is_paid) {
                 if (lastOrderServerOPData.modified_payment_lines) {
                   this.cancelOnlinePayment(this.currentOrder);
@@ -132,7 +119,7 @@
                   onlinePaymentLine.set_payment_status(undefined);
                 }
                 prevOnlinePaymentLine = onlinePaymentLine;
-              }
+              
             }
 
           }
@@ -183,9 +170,20 @@
             this.showModifiedOnlinePaymentsPopup();
             return false;
           }
+
+         
+  
         }
 
+        const a = await this.env.services.rpc(
+          "/pos/zalopay/callback",
+        );
+        if (a)
+          console.log("lấy được callback")
+
         return true;
+
+       
       },
 
       

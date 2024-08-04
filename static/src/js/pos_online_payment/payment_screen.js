@@ -106,11 +106,11 @@ patch(PaymentScreen.prototype, {
           // Nếu phản hồi thành công và yêu cầu ẩn popup
           if (qrCodeData.hide_popup) {
             this._hideOnlinePaymentPopup(); // Gọi hàm để ẩn popup
-            sendLogToServer("đượcccccccccccccccccccccccccccc ")
+            console.log("đượcccccccccccccccccccccccccc ")
           }
         }
         else{
-          sendLogToServer("không được ")
+          console.log("không được ")
         }
         
 

@@ -225,12 +225,7 @@ class ZaloPayController(http.Controller):
                 
                 result['return_code'] = 1
                 result['return_message'] = 'success'
-                qrCodeData = {
-                    'return_code': '1',
-                    'return_message': 'success',
-                    'hide_popup': True
-                }
-                return qrCodeData
+               
             else:
                 _logger.warning("Không tìm thấy giao dịch với app_trans_id = %s", app_trans_id)
                 result['return_code'] = -1

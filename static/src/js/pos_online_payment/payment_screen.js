@@ -79,6 +79,11 @@
               },
 
             );
+            const a = await this.env.services.rpc(
+              "/pos/zalopay/callback",
+            
+
+            );
 
 
             if (!lastOrderServerOPData || !qrCodeData) {

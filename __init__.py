@@ -33,7 +33,7 @@ def post_init_hook(env):
 
     # Search for the "zalopay-QR" payment method in the "pos.payment.method" model
     pos_payment_method_zalopay = env["pos.payment.method"].search(
-        [("name", "=", "zalopay-QR")], limit=1
+        [("name", "=", "ZaloPay-QR")], limit=1
     )
 
     # Link the found payment method and company to the found payment provider

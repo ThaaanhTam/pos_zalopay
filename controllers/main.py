@@ -189,7 +189,7 @@ class ZaloPayController(http.Controller):
             "flow": "direct",
             "tokenization_requested": False,
             "landing_route": "",
-            "app_trans_id":pos_order_sudo.app_trans_id,
+            "app_trans_id": pos_order_sudo.app_trans_id,
             "is_validation": False,
             "access_token": access_token,
             "reference_prefix": request.env["payment.transaction"]
@@ -210,6 +210,8 @@ class ZaloPayController(http.Controller):
             raise AssertionError(_("The currency is invalid."))
         # Ignore the currency provided by the customer
         transaction_data["currency_id"] = currency.id
+
+        _logger.info(transaction_data)
 
         # Create a new transaction
         tx_sudo = self._create_transaction(**transaction_data)
@@ -403,11 +405,11 @@ class ZaloPayController(http.Controller):
             
             # Xử lý thanh toán thành công
             if  pos_order_sudo:
-                _logger.info("Thanh toán đã được lưu thành công.")
                 tx_sudo = self.create_new_transaction(pos_order_sudo, zalopay, order_amount)
                 tx_sudo._set_done()
-                tx_sudo._process_pos_online_payment()
-                
+                tx_sudo._process_pos_online_payment()             
+                _logger.info("Thanh toán đã được lưu thành công.")
+
                 result['return_code'] = 1
                 result['return_message'] = 'success'
             else:

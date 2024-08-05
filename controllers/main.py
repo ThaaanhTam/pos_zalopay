@@ -67,7 +67,7 @@ class ZaloPayController(http.Controller):
                 "app_trans_id": app_trans_id,
                 "app_user": zalopay.app_user,  # You might want to get this from `zalopay` too
                 "app_time": int(datetime.now().timestamp() * 1000),
-                "embed_data": json.dumps({}),
+                "embed_data": json.dumps({"redirect_url": "https://dev02.t4tek.tk/pos/ui?config_id=3"}),
                 "item": json.dumps([{}]),
                 "amount": amount,  # Example amount in VND
                 "description": "Payment for order",
@@ -253,7 +253,7 @@ class ZaloPayController(http.Controller):
                     'zalopay_result': json.dumps(data),
                     'zalopay_status': data.get('return_code')  # Assuming you want to store the return_code as status
                 })
-                _logger.info("Đã lưu kết quả thanh toán vào đơn hàng: %s", order.name)
+                _logger.info("Đã lưu kết quả thanh toán vào đơn hàng: %s", order.app_trans_id)
             else:
                 _logger.warning("Không tìm thấy đơn hàng với app_trans_id: %s", data['app_trans_id'])
         except Exception as e:

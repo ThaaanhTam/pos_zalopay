@@ -362,22 +362,15 @@ class ZaloPayController(http.Controller):
         _logger.info("Nhận dữ liệu callback từ ZaloPay: %s", data)
 
         try:
-            # Get the POS order with the app_trans_id
-            
-
-            # Get the ZaloPay provider
             zalopay = (
                 request.env["payment.provider"]
                 .sudo()
                 .search([("code", "=", "zalopay")], limit=1)
             )
-
-            # Verify the callback data
-            # data_string = f"{data['app_id']}|{data['app_trans_id']}|{data['app_user']}|{data['amount']}|{data['app_time']}|{data['embed_data']}|{data['item']}"
             mac = hmac.new(zalopay.key2.encode(), data['data'].encode(), hashlib.sha256).hexdigest()
 
             if mac != data['mac']:
-                _logger.info("Không nhận được dữ liệu JSON từ ZaloPay")
+                _logger.info("Dữ liệu không hợp lệ")
                 result['return_code'] = -1
                 result['return_message'] = 'mac not equal'
 
@@ -392,11 +385,7 @@ class ZaloPayController(http.Controller):
                     .search([('app_trans_id', '=', app_trans_id)], limit=1)
                 )
 
-                order_amount = pos_order_sudo._get_checked_next_online_payment_amount()
-
-
-                if not pos_order_sudo:
-                    pass                
+                order_amount = pos_order_sudo._get_checked_next_online_payment_amount()             
             
             # Xử lý thanh toán thành công
             if  pos_order_sudo:
@@ -417,29 +406,8 @@ class ZaloPayController(http.Controller):
             result['return_code'] = 0  # ZaloPay server sẽ callback lại (tối đa 3 lần)
             result['return_message'] = str(e)
         _logger.info("Kết thúc xử lý callback ZaloPay với kết quả: %s", result)
-
-
-
-        # self._save_payment_result(pos_order_sudo, result)
-        # Thông báo kết quả cho ZaloPay server
         return result
 
-    def _save_payment_result(self, tx_sudo, result):
-        """Lưu kết quả thanh toán vào cơ sở dữ liệu."""
-        _logger.info("Đã lưu trạng thái thanh toánz")
-
-
-
-        if tx_sudo:
-            tx_sudo.write({
-                'zalopay_result': json.dumps(result),
-                'zalopay_status': 'success' if result['return_code'] == 1 else 'failed'
-            })
-        else:
-            _logger.error("Không thể lưu kết quả thanh toán: Không tìm thấy giao dịch")
-
-
-            
 
 
 

@@ -27,10 +27,194 @@ class ZaloPayController(http.Controller):
     _create_qr_url = "/api/zalopay/get_payment_qr"
     _callback_url = "/pos/zalopay/callback"
 
+    def _create_transaction(
+        self,
+        provider_id,
+        payment_method_id,
+        token_id,
+        amount,
+        currency_id,
+        partner_id,
+        flow,
+        tokenization_requested,
+        landing_route,
+        app_trans_id,
+        reference_prefix=None,
+        is_validation=False,
+        custom_create_values=None,
+        **kwargs,
+    ):
+        """Override the original method to create a transaction for the POS VNPay payment method."""
+        # Prepare create values
+        if flow in ["redirect", "direct"]:  # Direct payment or payment with redirection
+            provider_sudo = request.env["payment.provider"].sudo().browse(provider_id)
+            token_id = None
+            tokenize = bool(
+                # Don't tokenize if the user tried to force it through the browser's developer tools
+                provider_sudo.allow_tokenization
+                # Token is only created if required by the flow or requested by the user
+                and (
+                    provider_sudo._is_tokenization_required(**kwargs)
+                    or tokenization_requested
+                )
+            )
+        elif flow == "token":  # Payment by token
+            token_sudo = request.env["payment.token"].sudo().browse(token_id)
 
-    
+            # Prevent from paying with a token that doesn't belong to the current partner (either
+            # the current user's partner if logged in, or the partner on behalf of whom the payment
+            # is being made).
+            partner_sudo = request.env["res.partner"].sudo().browse(partner_id)
+            if (
+                partner_sudo.commercial_partner_id
+                != token_sudo.partner_id.commercial_partner_id
+            ):
+                raise AccessError(_("You do not have access to this payment token."))
 
+            provider_sudo = token_sudo.provider_id
+            payment_method_id = token_sudo.payment_method_id.id
+            tokenize = False
+        else:
+            raise ValidationError(
+                _(
+                    "The payment should either be direct, with redirection, or made by a token."
+                )
+            )
 
+        reference = request.env["payment.transaction"]._compute_reference(
+            provider_sudo.code,
+            prefix=reference_prefix,
+            separator="-",
+            **(custom_create_values or {}),
+            **kwargs,
+        )
+        if (
+            is_validation
+        ):  # Providers determine the amount and currency in validation operations
+            amount = provider_sudo._get_validation_amount()
+            payment_method = request.env["payment.method"].browse(payment_method_id)
+            currency_id = (
+                provider_sudo.with_context(
+                    validation_pm=payment_method  # Will be converted to a kwarg in master.
+                )
+                ._get_validation_currency()
+                .id
+            )
+
+        # Create the transaction
+        tx_sudo = (
+            request.env["payment.transaction"]
+            .sudo()
+            .create(
+                {
+                    "provider_id": provider_sudo.id,
+                    "payment_method_id": payment_method_id,
+                    "reference": reference,
+                    "amount": amount,
+                    "currency_id": currency_id,
+                    "partner_id": partner_id,
+                    "token_id": token_id,
+                    "operation": (
+                        f"online_{flow}" if not is_validation else "validation"
+                    ),
+                    "tokenize": tokenize,
+                    "landing_route": landing_route,
+                    "app_trans_id": app_trans_id
+                    # "app_trand_id": 
+                    **(custom_create_values or {}),
+                }
+            )
+        )  # In sudo mode to allow writing on callback fields
+
+        if flow == "token":
+            tx_sudo._send_payment_request()  # Payments by token process transactions immediately
+        else:
+            tx_sudo._log_sent_message()
+
+        # Monitor the transaction to make it available in the portal.
+        PaymentPostProcessing.monitor_transaction(tx_sudo)
+
+        return tx_sudo
+
+    def _get_partner_sudo(self, user_sudo):
+        """Get the partner of the user.
+        Args:
+            user_sudo: The user record in sudo mode.
+        Returns:
+            partner_sudo: The partner record in sudo mode.
+        """
+        partner_sudo = user_sudo.partner_id
+        if not partner_sudo and user_sudo._is_public():
+            partner_sudo = self.env.ref("base.public_user")
+        return partner_sudo
+
+    # Create a new transaction for the POS VNPay payment method
+    def create_new_transaction(self, pos_order_sudo, zalopay, order_amount):
+        """Create a new transaction with POS VNPay payment method
+        Args:
+            pos_order_sudo: pos.order record in sudo mode
+            vnpay: payment.provider vnpay record
+            order_amount: The amount of the order
+        Raises:
+            AssertionError: If the currency is invalid
+        Returns:
+            tx_sudo: The created transaction record in sudo mode
+        """
+
+        # Get the access token of the POS order
+        access_token = pos_order_sudo.access_token
+
+        # Get the VNPay QR payment method
+        zalopay_qr_method = (
+            request.env["payment.method"]
+            .sudo()
+            .search([("code", "=", "zalopayqr")], limit=1)
+        )
+
+        # Get the user and partner of the user
+        user_sudo = request.env.user
+        partner_sudo = pos_order_sudo.partner_id or self._get_partner_sudo(user_sudo)
+
+        # Create transaction data
+        prefix_kwargs = {
+            "pos_order_id": pos_order_sudo.id,
+        }
+        transaction_data = {
+            "provider_id": zalopay.id,
+            "payment_method_id": zalopay_qr_method.id,
+            "partner_id": partner_sudo.id,
+            "partner_phone": partner_sudo.phone,
+            "token_id": None,
+            "amount": int(order_amount),
+            "flow": "direct",
+            "tokenization_requested": False,
+            "landing_route": "",
+            "app_trans_id":pos_order_sudo.app_trans_id,
+            "is_validation": False,
+            "access_token": access_token,
+            "reference_prefix": request.env["payment.transaction"]
+       
+            .sudo()
+            ._compute_reference_prefix(
+                provider_code="zalopay", separator="-", **prefix_kwargs
+            ),
+            "custom_create_values": {
+                "pos_order_id": pos_order_sudo.id,
+                "tokenize": False,
+            },
+        }
+
+        # Check if the currency is valid
+        currency = pos_order_sudo.currency_id
+        if not currency.active:
+            raise AssertionError(_("The currency is invalid."))
+        # Ignore the currency provided by the customer
+        transaction_data["currency_id"] = currency.id
+
+        # Create a new transaction
+        tx_sudo = self._create_transaction(**transaction_data)
+
+        return tx_sudo
     @http.route(
             _create_qr_url,
             type='json',
@@ -204,24 +388,25 @@ class ZaloPayController(http.Controller):
                 dataJson = json.loads(data['data'])
                 app_trans_id = dataJson['app_trans_id']
                 _logger.info("Cập nhật trạng thái đơn hàng = success cho app_trans_id = %s", app_trans_id)
-               
-
-                tx_sudo = (
+            
+                pos_order_sudo = (
                     request.env["pos.order"]
                     .sudo()
                     .search([('app_trans_id', '=', app_trans_id)], limit=1)
                 )
-                all_transactions = request.env['pos.order'].sudo().search([])
-                for tx in all_transactions:
-                    _logger.info("Giao dịch hiện có: %s với app_trans_id: %s", tx.id, tx.app_trans_id)
-                _logger.info("Kết quả tìm kiếm đơn hàng: %s", tx_sudo.app_trans_id)
-                
 
+                order_amount = pos_order_sudo._get_checked_next_online_payment_amount()
+
+
+                if not pos_order_sudo:
+                    pass                
             
             # Xử lý thanh toán thành công
-            if  tx_sudo:
+            if  pos_order_sudo:
                 _logger.info("Thanh toán đã được lưu thành công.")
-                tx_sudo.write({'state': 'paid'})
+                tx_sudo = self.create_new_transaction(pos_order_sudo, zalopay, order_amount)
+                tx_sudo._set_done()
+                tx_sudo._process_pos_online_payment()
                 
                 result['return_code'] = 1
                 result['return_message'] = 'success'
@@ -238,7 +423,7 @@ class ZaloPayController(http.Controller):
 
 
 
-        self._save_payment_result(tx_sudo, result)
+        # self._save_payment_result(pos_order_sudo, result)
         # Thông báo kết quả cho ZaloPay server
         return result
 

@@ -31,14 +31,13 @@ class ZaloPayController(http.Controller):
         self,
         provider_id,
         payment_method_id,
+        partner_id,
         token_id,
         amount,
         currency_id,
-        partner_id,
         flow,
         tokenization_requested,
         landing_route,
-        app_trans_id,
         reference_prefix=None,
         is_validation=False,
         custom_create_values=None,
@@ -119,8 +118,6 @@ class ZaloPayController(http.Controller):
                     ),
                     "tokenize": tokenize,
                     "landing_route": landing_route,
-                    "app_trans_id": app_trans_id
-                    # "app_trand_id": 
                     **(custom_create_values or {}),
                 }
             )
@@ -189,11 +186,9 @@ class ZaloPayController(http.Controller):
             "flow": "direct",
             "tokenization_requested": False,
             "landing_route": "",
-            "app_trans_id": pos_order_sudo.app_trans_id,
             "is_validation": False,
             "access_token": access_token,
             "reference_prefix": request.env["payment.transaction"]
-       
             .sudo()
             ._compute_reference_prefix(
                 provider_code="zalopay", separator="-", **prefix_kwargs

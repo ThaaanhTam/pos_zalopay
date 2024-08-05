@@ -67,7 +67,7 @@ class ZaloPayController(http.Controller):
                 "app_trans_id": app_trans_id,
                 "app_user": zalopay.app_user,  # You might want to get this from `zalopay` too
                 "app_time": int(datetime.now().timestamp() * 1000),
-                "embed_data": json.dumps({"redirect_url": 'https://dev02.t4tek.tk/pos/ui?config_id=3'}),
+                "embed_data": json.dumps({"redirect_url": "https://dev02.t4tek.tk/pos/ui?config_id=3"}),
                 "item": json.dumps([{}]),
                 "amount": amount,  # Example amount in VND
                 "description": "Payment for order",

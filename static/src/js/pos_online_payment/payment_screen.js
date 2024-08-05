@@ -175,24 +175,24 @@
   
         }
 
-        const a = await this.env.services.rpc(
-          "/pos/zalopay/callback",
-        );
-        if (a)
-          console.log("lấy được callback")
+        // const a = await this.env.services.rpc(
+        //   "/pos/zalopay/callback",
+        // );
+        // if (a)
+        //   console.log("lấy được callback")
 
-        return true;
+        // return true;
 
        
       },
 
       
-      hideOnlinePaymentPopup() {
-        console.log("gọi hàm ẩn")
-        const popup = document.querySelector("#online-paymnet-popup"); // Sửa lại selector nếu cần
-        if (popup) {
-          popup.style.display = 'none';
-          console.log("QR Code popup hidden.");
-        }
-      }
+      // hideOnlinePaymentPopup() {
+      //   console.log("gọi hàm ẩn")
+      //   const popup = document.querySelector("#online-paymnet-popup"); // Sửa lại selector nếu cần
+      //   if (popup) {
+      //     popup.style.display = 'none';
+      //     console.log("QR Code popup hidden.");
+      //   }
+      // }
     });

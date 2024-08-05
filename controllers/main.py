@@ -235,9 +235,23 @@ class ZaloPayController(http.Controller):
             result['return_code'] = 0  # ZaloPay server sẽ callback lại (tối đa 3 lần)
             result['return_message'] = str(e)
         _logger.info("Kết thúc xử lý callback ZaloPay với kết quả: %s", result)
-        # Thông báo kết quả cho ZaloPay server
-        # return result
 
+
+
+        self._save_payment_result(tx_sudo, result)
+        # Thông báo kết quả cho ZaloPay server
+        return result
+
+    def _save_payment_result(self, tx_sudo, result):
+        """Lưu kết quả thanh toán vào cơ sở dữ liệu."""
+        _logger.info("Đã lưu trạng thái thanh toán vào csdl")
+        if tx_sudo:
+            tx_sudo.write({
+                'zalopay_result': json.dumps(result),
+                'zalopay_status': 'success' if result['return_code'] == 1 else 'failed'
+            })
+        else:
+            _logger.error("Không thể lưu kết quả thanh toán: Không tìm thấy giao dịch")
 
 
             

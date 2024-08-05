@@ -22,7 +22,7 @@ from odoo.http import request
 
 _logger = logging.getLogger(__name__)
 
-class ZaloPayController(http.Controller):
+class ZaloPayPortal(payment_portal.PaymentPortal):
 
     _create_qr_url = "/api/zalopay/get_payment_qr"
     _callback_url = "/pos/zalopay/callback"

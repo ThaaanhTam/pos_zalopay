@@ -221,16 +221,10 @@ class ZaloPayController(http.Controller):
             # Xử lý thanh toán thành công
             if  tx_sudo:
                 _logger.info("Thanh toán đã được lưu thành công.")
-                tx_sudo.write({'state': 'done'})
+                tx_sudo.write({'state': 'paid'})
                 
                 result['return_code'] = 1
                 result['return_message'] = 'success'
-                a = {
-                    'return_code': '1',
-                    'return_message': 'success',
-                   
-                }
-                return a
             else:
                 _logger.warning("Không tìm thấy giao dịch với app_trans_id = %s", app_trans_id)
                 result['return_code'] = -1

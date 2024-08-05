@@ -248,7 +248,7 @@ class ZaloPayController(http.Controller):
             # Get the order based on app_trans_id
             order = request.env['pos.order'].sudo().search([('app_trans_id', '=', data['app_trans_id'])], limit=1)
             if order:
-                _logger.info("Tìm thấy đơn hàng: %s", order.name)
+                _logger.info("Tìm thấy đơn hàng: %s", order.app_trans_id)
                 order.sudo().write({
                     'zalopay_result': json.dumps(data),
                     'zalopay_status': data.get('return_code')  # Assuming you want to store the return_code as status

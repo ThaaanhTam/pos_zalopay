@@ -5,7 +5,7 @@
     "version": "1.3",
     "category": "Point of Sale",
     "sequence": 0,
-    "summary": "................",
+    "summary": "..........",
     "description": " ",  # Non-empty string to avoid loading the README file.
     "author": "ThanhTam",
     "depends": ["payment_zalopay", "point_of_sale", "account_payment"],

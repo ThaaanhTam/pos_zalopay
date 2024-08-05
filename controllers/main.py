@@ -225,12 +225,7 @@ class ZaloPayController(http.Controller):
                 
                 result['return_code'] = 1
                 result['return_message'] = 'success'
-                a = {
-                    'return_code': '1',
-                    'return_message': 'success',
-                   
-                }
-                return a
+                self._save_payment_result(dataJson)
             else:
                 _logger.warning("Không tìm thấy giao dịch với app_trans_id = %s", app_trans_id)
                 result['return_code'] = -1
@@ -243,6 +238,27 @@ class ZaloPayController(http.Controller):
         _logger.info("Kết thúc xử lý callback ZaloPay với kết quả: %s", result)
         # Thông báo kết quả cho ZaloPay server
         return result
+    
+
+
+    def _save_payment_result(self, data):
+        """Lưu thông tin kết quả thanh toán vào cơ sở dữ liệu."""
+        _logger.info("Lưu thông tin kết quả thanh toán vào cơ sở dữ liệu: %s", data)
+        try:
+            # Get the order based on app_trans_id
+            order = request.env['pos.order'].sudo().search([('app_trans_id', '=', data['app_trans_id'])], limit=1)
+            if order:
+                _logger.info("Tìm thấy đơn hàng: %s", order.name)
+                order.sudo().write({
+                    'zalopay_result': json.dumps(data),
+                    'zalopay_status': data.get('return_code')  # Assuming you want to store the return_code as status
+                })
+                _logger.info("Đã lưu kết quả thanh toán vào đơn hàng: %s", order.name)
+            else:
+                _logger.warning("Không tìm thấy đơn hàng với app_trans_id: %s", data['app_trans_id'])
+        except Exception as e:
+            _logger.error("Lỗi khi lưu kết quả thanh toán: %s", str(e))
+
 
 
 

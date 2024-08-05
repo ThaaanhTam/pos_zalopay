@@ -75,7 +75,10 @@
             const qrCodeData = await this.env.services.rpc(
               "/api/zalopay/get_payment_qr",
               {
+                orderId: lastOrderServerOPData.id,
+
                 amount: onlinePaymentLineAmount,
+
               },
 
             );

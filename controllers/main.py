@@ -120,7 +120,7 @@ class ZaloPayController(http.Controller):
             if not zalopay:
                 raise ValueError("Không phải nhà cung cấp")
 
-            _logger.info("Đúng nhà cung aaaaaaaaaaaaaaaaaaaap %s", zalopay)
+            _logger.info("Đúng nhà cung cấpppppppppppppppppppppppppppppp %s", zalopay)
             
             # Get appid from ZaloPay provider and convert to integer
             app_id = int(zalopay.appid)

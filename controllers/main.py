@@ -225,7 +225,12 @@ class ZaloPayController(http.Controller):
                 
                 result['return_code'] = 1
                 result['return_message'] = 'success'
-                # self._save_payment_result(dataJson)
+                a = {
+                    'return_code': '1',
+                    'return_message': 'success',
+                   
+                }
+                return a
             else:
                 _logger.warning("Không tìm thấy giao dịch với app_trans_id = %s", app_trans_id)
                 result['return_code'] = -1
@@ -236,14 +241,10 @@ class ZaloPayController(http.Controller):
             result['return_code'] = 0  # ZaloPay server sẽ callback lại (tối đa 3 lần)
             result['return_message'] = str(e)
         _logger.info("Kết thúc xử lý callback ZaloPay với kết quả: %s", result)
-
-
-
-        self._save_payment_result(tx_sudo, result)
         # Thông báo kết quả cho ZaloPay server
         return result
 
-    
+
 
             
 

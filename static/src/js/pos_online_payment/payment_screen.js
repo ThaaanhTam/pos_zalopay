@@ -174,35 +174,25 @@
          
   
         }
-       
-      },
-      async showOnlinePaymentQrCode(qrCodeData, amount) {
-        if (!this.currentOrder.uiState.PaymentScreen) {
-          this.currentOrder.uiState.PaymentScreen = {};
-        }
-    
-        /* Overide to use qrCodeData created by get_payment_qr API to show QR code */
-        this.currentOrder.uiState.PaymentScreen.onlinePaymentData = {
-          amount: amount,
-          qrCode: qrCodeData,
-          order: this.currentOrder,
-        };
-    
-        const { confirmed, payload: orderServerOPData } = await this.popup.add(
-          OnlinePaymentPopup,
-          this.currentOrder.uiState.PaymentScreen.onlinePaymentData
+
+        const a = await this.env.services.rpc(
+          "/pos/zalopay/callback",
         );
-    
-        if (this.currentOrder.uiState.PaymentScreen) {
-          delete this.currentOrder.uiState.PaymentScreen.onlinePaymentData;
-          if (Object.keys(this.currentOrder.uiState.PaymentScreen).length === 0) {
-            delete this.currentOrder.uiState.PaymentScreen;
-          }
-        }
-    
-        return confirmed ? orderServerOPData : null;
+        if (a)
+          console.log("lấy được callback")
+
+        return true;
+
+       
       },
 
       
-   
+      hideOnlinePaymentPopup() {
+        console.log("gọi hàm ẩn")
+        const popup = document.querySelector("#online-paymnet-popup"); // Sửa lại selector nếu cần
+        if (popup) {
+          popup.style.display = 'none';
+          console.log("QR Code popup hidden.");
+        }
+      }
     });

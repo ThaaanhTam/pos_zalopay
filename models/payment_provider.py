@@ -16,7 +16,7 @@ class PaymentPOSZALOPay(models.Model):
     zalopay_qr_tmn_code = fields.Char(
         string="ZALOPay Website Code for QR ", required_if_provider="zalopay"
     )
-
+    
 
     def _get_default_payment_method_codes(self):
         """Override of `payment` to return the default payment method codes."""

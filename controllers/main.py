@@ -39,7 +39,7 @@ class ZaloPayPortal(payment_portal.PaymentPortal):
             partner_sudo = self.env.ref("base.public_user")
         return partner_sudo
 
-    # Create a new transaction for the POS VNPay payment method
+    # Create a new transaction for the POS ZALOPay payment method
     def create_new_transaction(self, pos_order_sudo, zalopay, order_amount):
         """Create a new transaction with POS VNPay payment method
         Args:
@@ -147,7 +147,7 @@ class ZaloPayPortal(payment_portal.PaymentPortal):
                 "amount": amount,  # Example amount in VND
                 "description": "Payment for order",
                 "bank_code": "zalopayapp",
-                "callback_url": request.httprequest.url_root.replace("http://", "https://") + 'pos/zalopay/callback',
+                "callback_url": request.httprequest.url_root.replace+ 'pos/zalopay/callback',
 
             }
 
@@ -232,12 +232,6 @@ class ZaloPayPortal(payment_portal.PaymentPortal):
         except Exception as e:
             _logger.error("Error creating ZaloPay payment order: %s", str(e))
             return {'status': 'error', 'message': str(e)}
-        
-    def _get_current_session_id(self):
-        """Lấy session_id hiện tại. Cần tùy chỉnh tùy thuộc vào cách quản lý session của bạn."""
-        # Ví dụ: Lấy session_id của phiên POS đang mở
-        session = http.request.env['pos.session'].sudo().search([('state', '=', 'opened')], limit=1)
-        return session.id if session else False
           
     @http.route(
         _callback_url,
@@ -250,7 +244,7 @@ class ZaloPayPortal(payment_portal.PaymentPortal):
         """Xử lý callback từ ZaloPay."""
         result = {}
         logging.info("xử lý callbackkkkkkkkkkkkkkkkkkkkkkkkkkkk")
-
+    
         aa = request.httprequest.get_data()
         data = json.loads(aa)
         _logger.info("Nhận dữ liệu callback từ ZaloPay: %s", data)

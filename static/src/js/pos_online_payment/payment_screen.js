@@ -13,11 +13,11 @@
 
       async _isOrderValid(isForceValidate) {
       
-
+        // kiểm tra tính hợp lệ của đơn hàng
         if (!(await super._isOrderValid(...arguments))) {
           return false;
         }
-
+        // kiểm tra phương thức thanh toán
         if (!this.payment_methods_from_config.some((pm) => pm.is_online_payment)) {
           return true;
         }
@@ -29,10 +29,10 @@
 
         const onlinePaymentLines = this.getRemainingOnlinePaymentLines();
         if (onlinePaymentLines.length > 0) {
-          this.currentOrder.date_order = luxon.DateTime.now();
-          this.currentOrder.save_to_db();
-          this.pos.addOrderToUpdateSet();
-
+          this.currentOrder.date_order = luxon.DateTime.now(); //cập nhật ngày giờ đơn hàng
+          this.currentOrder.save_to_db();//Lưu đơn hàng vào csdl
+          this.pos.addOrderToUpdateSet();//Thêm đơn hàng vào tập hợp cập nhật POS
+          //Thư gửi đơn hàng bản nháp
           try {
             await this.pos.sendDraftToServer();
           } catch (error) {
@@ -46,7 +46,7 @@
             this.showSaveOrderOnServerErrorPopup();
             return false;
           }
-
+          //Kiểm tra đơn hàng có server_id
           if (!this.currentOrder.server_id) {
             this.showSaveOrderOnServerErrorPopup();
             return false;
@@ -65,13 +65,13 @@
           let lastOrderServerOPData = null;
           for (const onlinePaymentLine of onlinePaymentLines) {
             const onlinePaymentLineAmount = onlinePaymentLine.get_amount();
-
+            //Cập nhật thanh toán trực tuyến đến máy chủ
             lastOrderServerOPData =
               await this.currentOrder.update_online_payments_data_with_server(
                 this.pos.orm,
                 onlinePaymentLineAmount
               );
-
+              //Gọi API để lấy mã QR
             const qrCodeData = await this.env.services.rpc(
               "/api/zalopay/get_payment_qr",
               {
@@ -92,7 +92,7 @@
               });
               return false;
             }
-
+            
               if (!lastOrderServerOPData.is_paid) {
                 if (lastOrderServerOPData.modified_payment_lines) {
                   this.cancelOnlinePayment(this.currentOrder);
@@ -178,24 +178,10 @@
   
         }
 
-        const a = await this.env.services.rpc(
-          "/pos/zalopay/callback",
-        );
-        if (a)
-          console.log("lấy được callback")
-
-        return true;
-
+      
        
       },
 
       
-      hideOnlinePaymentPopup() {
-        console.log("gọi hàm ẩn")
-        const popup = document.querySelector("#online-paymnet-popup"); // Sửa lại selector nếu cần
-        if (popup) {
-          popup.style.display = 'none';
-          console.log("QR Code popup hidden.");
-        }
-      }
+      
     });

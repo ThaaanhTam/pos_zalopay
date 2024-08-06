@@ -244,7 +244,7 @@ class ZaloPayPortal(payment_portal.PaymentPortal):
         """Xử lý callback từ ZaloPay."""
         result = {}
         logging.info("xử lý callbackkkkkkkkkkkkkkkkkkkkkkkkkkkk")
-    
+        
         aa = request.httprequest.get_data()
         data = json.loads(aa)
         _logger.info("Nhận dữ liệu callback từ ZaloPay: %s", data)

@@ -147,7 +147,7 @@ class ZaloPayPortal(payment_portal.PaymentPortal):
                 "amount": amount,  # Example amount in VND
                 "description": "Payment for order",
                 "bank_code": "zalopayapp",
-                "callback_url": request.httprequest.url_root.replace+ 'pos/zalopay/callback',
+                "callback_url": request.httprequest.url_root.replace("http://", "https://") + 'pos/zalopay/callback',
 
             }
 

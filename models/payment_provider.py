@@ -18,9 +18,9 @@ class PaymentPOSZALOPay(models.Model):
     )
     
 
-    def _get_default_payment_method_codes(self):
-        """Override of `payment` to return the default payment method codes."""
-        default_codes = super()._get_default_payment_method_codes()
-        if self.code != "zalopay":
-            return default_codes
-        return const.DEFAULT_PAYMENT_METHODS_CODES
+    # def _get_default_payment_method_codes(self):
+    #     """Override of `payment` to return the default payment method codes."""
+    #     default_codes = super()._get_default_payment_method_codes()
+    #     if self.code != "zalopay":
+    #         return default_codes
+    #     return const.DEFAULT_PAYMENT_METHODS_CODES

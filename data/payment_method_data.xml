@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo noupdate="1">
+  <!-- Creates a new record in the 'payment.method' model with the id 'payment_method_zalopay'. -->
+
   <record id="payment_method_zalopay_qr" model="payment.method">
     <field name="name">ZaloPay-QR</field>
     <field name="code">zalopayqr</field>

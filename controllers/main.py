@@ -41,13 +41,11 @@ class ZaloPayPortal(payment_portal.PaymentPortal):
 
     # Create a new transaction for the POS ZALOPay payment method
     def create_new_transaction(self, pos_order_sudo, zalopay, order_amount):
-        """Create a new transaction with POS VNPay payment method
+        """Create a new transaction with POS ZALOPay payment method
         Args:
             pos_order_sudo: pos.order record in sudo mode
             vnpay: payment.provider vnpay record
             order_amount: The amount of the order
-        Raises:
-            AssertionError: If the currency is invalid
         Returns:
             tx_sudo: The created transaction record in sudo mode
         """
@@ -55,7 +53,7 @@ class ZaloPayPortal(payment_portal.PaymentPortal):
         # Get the access token of the POS order
         access_token = pos_order_sudo.access_token
 
-        # Get the VNPay QR payment method
+        # Get the zalopay QR payment method
         zalopay_qr_method = (
             request.env["payment.method"]
             .sudo()
@@ -82,7 +80,7 @@ class ZaloPayPortal(payment_portal.PaymentPortal):
             "landing_route": "",
             "is_validation": False,
             "access_token": access_token,
-            "reference_prefix": request.env["payment.transaction"]
+            "reference_prefix": request.env["payment.transaction"] #tiền tố tham chiêu gd
             .sudo()
             ._compute_reference_prefix(
                 provider_code="zalopay", separator="-", **prefix_kwargs
@@ -140,14 +138,14 @@ class ZaloPayPortal(payment_portal.PaymentPortal):
             data = {
                 "app_id": app_id,
                 "app_trans_id": app_trans_id,
-                "app_user": zalopay.app_user,  # You might want to get this from `zalopay` too
+                "app_user": zalopay.app_user,  
                 "app_time": int(datetime.now().timestamp() * 1000),
                 "embed_data": json.dumps({}),
                 "item": json.dumps([{}]),
                 "amount": amount,  # Example amount in VND
                 "description": "Payment for order",
                 "bank_code": "zalopayapp",
-                "callback_url": request.httprequest.url_root.replace("http://", "https://") + 'pos/zalopay/callback',
+                "callback_url": request.httprequest.url_root + 'pos/zalopay/callback',
 
             }
 
@@ -209,12 +207,10 @@ class ZaloPayPortal(payment_portal.PaymentPortal):
 
                         _logger.info("Tạo thành công.")
                         
-                        # Cập nhật app_trans_id vào bản ghi đã tạo mới nhất
+                        # Cập nhật app_trans_id
                         latest_order = http.request.env['pos.order'].sudo().search([], order="id desc", limit=1)
                         if latest_order:
-                            _logger.info("Đang cập nhật app_trans_id: %s vào pos.order ID: %s", data['app_trans_id'], latest_order.id)
                             update_result = latest_order.sudo().write({'app_trans_id': data['app_trans_id']})
-                            _logger.info("Kết quả cập nhật: %s", update_result)
 
                             if update_result:
                                 # Kiểm tra lại bản ghi đã cập nhật
@@ -245,8 +241,8 @@ class ZaloPayPortal(payment_portal.PaymentPortal):
         result = {}
         logging.info("xử lý callbackkkkkkkkkkkkkkkkkkkkkkkkkkkk")
         
-        aa = request.httprequest.get_data()
-        data = json.loads(aa)
+        request = request.httprequest.get_data()
+        data = json.loads(request)
         _logger.info("Nhận dữ liệu callback từ ZaloPay: %s", data)
 
         try:
@@ -265,7 +261,6 @@ class ZaloPayPortal(payment_portal.PaymentPortal):
             else:
                 dataJson = json.loads(data['data'])
                 app_trans_id = dataJson['app_trans_id']
-                _logger.info("Cập nhật trạng thái đơn hàng = success cho app_trans_id = %s", app_trans_id)
             
                 pos_order_sudo = (
                     request.env["pos.order"]

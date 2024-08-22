@@ -76,9 +76,7 @@
               "/api/zalopay/get_payment_qr",
               {
                 orderId: lastOrderServerOPData.id,
-
                 amount: onlinePaymentLineAmount,
-
               },
 
             );
@@ -139,10 +137,6 @@
           }
 
           await this.afterPaidOrderSavedOnServer(lastOrderServerOPData.paid_order);
-
-        
-        
-
           return false;
         } else if (this.currentOrder.server_id) {
           const orderServerOPData =
@@ -163,25 +157,12 @@
           }
           if (orderServerOPData.is_paid) {
             await this.afterPaidOrderSavedOnServer(orderServerOPData.paid_order);
-
-         
-          
-
             return false;
           }
           if (orderServerOPData.modified_payment_lines) {
             this.showModifiedOnlinePaymentsPopup();
             return false;
           }
-
-         
-  
-        }
-
-      
-       
-      },
-
-      
-      
+        }    
+      },    
     });
